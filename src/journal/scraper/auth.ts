@@ -1,11 +1,5 @@
 const CLIENT_ID = process.env.PISTE_CLIENT_ID!;
 const CLIENT_SECRET = process.env.PISTE_CLIENT_SECRET!;
-console.log('CLIENT_ID', CLIENT_ID);
-console.log('CLIENT_SECRET', CLIENT_SECRET);
-
-if (!CLIENT_ID || !CLIENT_SECRET) {
-	throw new Error('Missing environment variables');
-}
 
 export async function getToken() {
 	const res = await fetch('https://sandbox-oauth.piste.gouv.fr/api/oauth/token', {

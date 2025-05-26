@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "cloudflare-og-image",
+	"name": "bot-journal-officiel",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-05-25",
 	"compatibility_flags": [

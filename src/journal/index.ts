@@ -246,13 +246,10 @@ Utilise des emojis avec parcimonie pour dynamiser les tweets.
 		model: wrappedLanguageModel,
 		system: systemPrompt,
 		schema: z.object({
-			topics: z
-				.array(z.string())
-				.describe('les thèmes du Journal officiel du jour, exemple: ["Santé & Outre-mer", "Transport médical", "Agriculture & Mayotte"]'),
 			tweets: z.array(
 				z.object({
 					content: z.string().describe('le contenu du tweet'),
-					title: z.string().describe('utilisé pour des informations supplémentaires, doit juste être le thème'),
+					title: z.string().describe('juste le thème'),
 				})
 			),
 		}),

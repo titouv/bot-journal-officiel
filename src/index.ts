@@ -11,7 +11,7 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-import { handleCron } from './main';
+import { handleCron, previewOg } from './main';
 import { getTweetForLastJo } from './journal';
 import { deleteAllTweetsFromAccount } from './bluesky';
 import { onRequestOgImage } from './og';
@@ -40,6 +40,9 @@ export default {
 					'Content-Type': 'application/json',
 				},
 			});
+		}
+		if (url.pathname === '/preview') {
+			return await previewOg();
 		}
 		if (url.pathname === '/cron') {
 			return await handleCron();

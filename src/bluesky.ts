@@ -83,6 +83,7 @@ export async function post(
 	if (linkDetails && linkDetails.imageUrl) {
 		console.log('UPLOADING IMAGE', linkDetails.imageUrl);
 		const resImage = await fetch(linkDetails.imageUrl);
+		console.log('FETCHING IMAGE RES', resImage);
 		const blob = await resImage.blob();
 		const { data, success } = await agent.uploadBlob(blob);
 		console.log('UPLOADED IMAGE', data, success);

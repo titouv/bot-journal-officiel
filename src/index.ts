@@ -20,7 +20,7 @@ export default {
 	async scheduled(controller, env, ctx) {
 		console.log('scheduled');
 		console.log('env', process.env);
-		// await handleCron();
+		await handleCron();
 	},
 	async fetch(request, env, ctx): Promise<Response> {
 		const url = new URL(request.url);

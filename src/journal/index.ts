@@ -159,7 +159,9 @@ async function renderJoToMarkdown(joSummaryResponse: GetJosResponse, date: strin
 		return "Journal officiel 'Lois et Décrets' not found. 📰🚫";
 	}
 
-	// const titleToFilter: Title[] = ['Présidence de la République', 'LOIS'];
+	const titleToFilter: Title[] = ['Présidence de la République', 'LOIS', 'Décrets, arrêtés, circulaires'];
+
+	const tmsFiltered = journalOfficiel.tms.filter((e) => titleToFilter.includes(e.titre as Title));
 
 	console.log(
 		'All titles',
@@ -167,13 +169,13 @@ async function renderJoToMarkdown(joSummaryResponse: GetJosResponse, date: strin
 	);
 
 	console.log('journalOfficiel', journalOfficiel);
-	const tableOfContents = renderJoToMarkdownSubForTableOfContents(journalOfficiel?.tms, date);
+	const tableOfContents = renderJoToMarkdownSubForTableOfContents(tmsFiltered, date);
 
 	console.log('fetchAllLiens');
-	const allLienDetails = await fetchAllLiens(journalOfficiel?.tms);
+	const allLienDetails = await fetchAllLiens(tmsFiltered);
 
 	console.log('renderJoToMarkdownSub');
-	const selectedElements = renderJoToMarkdownSub(journalOfficiel?.tms, date, allLienDetails);
+	const selectedElements = renderJoToMarkdownSub(tmsFiltered, date, allLienDetails);
 
 	return `Table of contents:\n\n${tableOfContents}\n\n\n${selectedElements}`;
 }

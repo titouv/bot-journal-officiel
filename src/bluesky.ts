@@ -81,9 +81,11 @@ export async function post(
 	let blobSave: BlobRef | undefined;
 
 	if (linkDetails && linkDetails.imageUrl) {
+		console.log('UPLOADING IMAGE', linkDetails.imageUrl);
 		const resImage = await fetch(linkDetails.imageUrl);
 		const blob = await resImage.blob();
 		const { data, success } = await agent.uploadBlob(blob);
+		console.log('UPLOADED IMAGE', data, success);
 		if (!success) {
 			throw new Error('Failed to upload blob');
 		}
@@ -93,10 +95,12 @@ export async function post(
 	const rt = new RichText({
 		text: text,
 	});
+	console.log('rt before detectFacets', rt);
 	await rt.detectFacets(agent); // automatically detects mentions and links
+	console.log('rt after detectFacets', rt);
 
 	if (linkDetails && blobSave) {
-		console.log('POSTING WITH LINK DETAILS', linkDetails);
+		console.log('POSTING WITH LINK DETAILS', text, linkDetails);
 		const res = await agent.post({
 			text: rt.text,
 			facets: rt.facets,
@@ -118,9 +122,10 @@ export async function post(
 				},
 			},
 		});
-		console.log(res);
+		console.log('res after post', res);
 		return res;
 	} else {
+		console.log('POSTING WITHOUT LINK DETAILS', text);
 		const res = await agent.post({
 			text: rt.text,
 			facets: rt.facets,
@@ -143,7 +148,7 @@ export async function post(
 				  }
 				: undefined,
 		});
-		console.log(res);
+		console.log('res after post', res);
 		return res;
 	}
 }

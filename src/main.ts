@@ -1,5 +1,5 @@
 import { getUrlForOgImage } from './og';
-import { postThread, Tweet } from './bluesky';
+import { getAgent, postThread, Tweet } from './bluesky';
 import { getTweetForLastJo } from './journal';
 
 export async function previewOg() {
@@ -50,7 +50,9 @@ export async function handleCron() {
 			linkDetails: i == 0 ? { title: tweet.title, link: value.url, imageUrl: ogImageUrl, description: tweet.content } : undefined,
 		})) ?? [];
 
-	await postThread(tweets);
+	const agent = await getAgent();
+
+	await postThread(agent, tweets);
 
 	return new Response(JSON.stringify(value), {
 		headers: {

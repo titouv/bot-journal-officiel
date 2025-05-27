@@ -1,17 +1,19 @@
 import { AtpAgent, ComAtprotoRepoStrongRef, RichText } from '@atproto/api';
 import { BlobRef } from '@atproto/lexicon';
 
-// Create a Bluesky Agent
-const agent = new AtpAgent({
-	service: 'https://bsky.social',
-});
 const env = {
 	identifier: process.env['BLUESKY_USERNAME']!,
 	password: process.env['BLUESKY_PASSWORD']!,
 };
-// await agent.login(env);
-// const tweet = await agent.getTimeline({});
-// console.log(tweet.data.feed);
+
+export async function getAgent() {
+	// Create a Bluesky Agent
+	const agent = new AtpAgent({
+		service: 'https://bsky.social',
+	});
+	await agent.login(env);
+	return agent;
+}
 
 export type Tweet = {
 	text: string;
@@ -23,8 +25,7 @@ export type Tweet = {
 	};
 };
 
-export async function deleteAllTweetsFromAccount() {
-	await agent.login(env);
+export async function deleteAllTweetsFromAccount(agent: AtpAgent) {
 	const { data } = await agent.getProfile({ actor: env.identifier });
 
 	const { data: dataFeed } = await agent.getAuthorFeed({
@@ -40,7 +41,7 @@ export async function deleteAllTweetsFromAccount() {
 	return dataFeed;
 }
 
-export async function postThread(tweets: Tweet[]) {
+export async function postThread(agent: AtpAgent, tweets: Tweet[]) {
 	let parentRef: ComAtprotoRepoStrongRef.Main | undefined;
 	let previousPostRef: ComAtprotoRepoStrongRef.Main | undefined;
 
@@ -48,6 +49,7 @@ export async function postThread(tweets: Tweet[]) {
 		console.log('Posting tweet', i);
 		const tweet = tweets[i];
 		const res = await post(
+			agent,
 			tweet,
 			parentRef
 				? {
@@ -65,6 +67,7 @@ export async function postThread(tweets: Tweet[]) {
 }
 
 export async function post(
+	agent: AtpAgent,
 	tweet: Tweet,
 	threadsRefs?: {
 		parentRef: ComAtprotoRepoStrongRef.Main;
@@ -76,8 +79,6 @@ export async function post(
 	const { text, linkDetails } = tweet;
 
 	let blobSave: BlobRef | undefined;
-
-	await agent.login(env);
 
 	if (linkDetails && linkDetails.imageUrl) {
 		const resImage = await fetch(linkDetails.imageUrl);

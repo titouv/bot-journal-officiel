@@ -27,7 +27,7 @@ export async function listLastNJo(n: number = 5): Promise<GetJorfContResponse | 
 	const payload = { nbElement: n };
 
 	try {
-		const response = await fetch(url, {
+		const response = await globalThis.fetch(url, {
 			method: 'POST',
 			headers: headers,
 			body: JSON.stringify(payload),

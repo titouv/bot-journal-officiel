@@ -1,7 +1,8 @@
-import React from "react";
-import { ImageResponse } from "npm:@wevm/vercel-og";
+/** @jsx h */
+import { h } from "https://esm.sh/preact";
+import { ImageResponse } from "https://deno.land/x/og_edge@0.0.4/mod.ts";
 
-async function loadGoogleFont(font: string, weight: number = 400) {
+export async function loadGoogleFont(font: string, weight: number = 400) {
   const url = `https://fonts.googleapis.com/css2?family=${font}:wght@${weight}`;
   const css = await (await fetch(url)).text();
   console.log(css);
@@ -163,7 +164,7 @@ export const onRequestOgImage = async (req: Request) => {
           />
         </div>
       </div>
-    ),
+    ) as any,
     {
       width: 1200,
       height: 630,

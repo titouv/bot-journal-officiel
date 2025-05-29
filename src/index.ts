@@ -60,5 +60,5 @@ async function fetchHandler(request: Request): Promise<Response> {
   return new Response("Hello World!");
 }
 
-Deno.serve(simpleHandler);
-// Deno.serve(fetchHandler);
+// Deno.serve(simpleHandler);
+Deno.serve(fetchHandler);

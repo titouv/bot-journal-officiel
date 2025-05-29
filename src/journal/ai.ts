@@ -16,21 +16,20 @@ function hash(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
 }
 
+import { redis } from "../redis.ts";
+
 const yourCacheMiddleware: LanguageModelV1Middleware = {
   wrapGenerate: async ({ doGenerate, params }) => {
     const cacheKey = hash(JSON.stringify(params));
-    const kv = await Deno.openKv();
 
-    const cachePath = `${cacheKey}.json`;
-
-    const value = await kv.get([cachePath]);
-    if (value && value.value) {
-      return JSON.parse(value.value as string);
+    const value = await redis.get(cacheKey);
+    if (value) {
+      return JSON.parse(value);
     }
     const result = await doGenerate();
     console.log("result", result);
     // Write the result to the cache file
-    await kv.set([cachePath], JSON.stringify(result));
+    await redis.set(cacheKey, JSON.stringify(result));
     return result;
   },
 };

@@ -1,5 +1,6 @@
 import React from "react";
-import { ImageResponse } from "npm:@wevm/vercel-og";
+// import { ImageResponse } from "npm:@wevm/vercel-og";
+import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
 
 async function loadGoogleFont(font: string, weight: number = 400) {
   const url = `https://fonts.googleapis.com/css2?family=${font}:wght@${weight}`;

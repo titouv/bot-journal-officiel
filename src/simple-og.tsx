@@ -1,5 +1,5 @@
 /** @jsx h */
-import { h } from "preact";
+import { h } from "https://esm.sh/preact";
 import { ImageResponse } from "https://deno.land/x/og_edge@0.0.4/mod.ts";
 
 export function simpleHandler(req: Request) {

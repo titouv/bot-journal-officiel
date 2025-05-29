@@ -14,7 +14,7 @@
 import { handleCron, previewOg } from "./main.ts";
 import { getTweetForLastJo } from "./journal/index.ts";
 import { deleteAllTweetsFromAccount, getAgent } from "./bluesky.ts";
-import { onRequestOgImage } from "./og.tsx";
+import { onRequestOgImage, simpleHandler } from "./og.tsx";
 import { redis } from "./redis.ts";
 
 async function fetchHandler(request: Request): Promise<Response> {
@@ -59,4 +59,5 @@ async function fetchHandler(request: Request): Promise<Response> {
   return new Response("Hello World!");
 }
 
-Deno.serve(fetchHandler);
+Deno.serve(simpleHandler);
+// Deno.serve(fetchHandler);

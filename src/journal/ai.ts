@@ -1,45 +1,41 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { wrapLanguageModel } from 'ai';
-import type { LanguageModelV1Middleware } from 'ai';
-// import fs from 'node:fs/promises';
-// import path from 'node:path';
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { wrapLanguageModel } from "ai";
+import type { LanguageModelV1Middleware } from "ai";
 
-console.log('process.env.GOOGLE_GENERATIVE_AI_API_KEY', process.env.GOOGLE_GENERATIVE_AI_API_KEY);
+import { env } from "../env.ts";
+
 const google = createGoogleGenerativeAI({
-	apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+  apiKey: env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 
-import { env } from 'cloudflare:workers';
+const model = google("gemini-2.0-flash");
 
-const model = google('gemini-2.0-flash');
-
-import crypto from 'node:crypto';
+import crypto from "node:crypto";
 
 function hash(input: string): string {
-	return crypto.createHash('sha256').update(input).digest('hex');
+  return crypto.createHash("sha256").update(input).digest("hex");
 }
 
 const yourCacheMiddleware: LanguageModelV1Middleware = {
-	wrapGenerate: async ({ doGenerate, params }) => {
-		const cacheKey = hash(JSON.stringify(params));
-		const KV = env.KV_BINDING;
+  wrapGenerate: async ({ doGenerate, params }) => {
+    const cacheKey = hash(JSON.stringify(params));
+    const kv = await Deno.openKv();
 
-		const cachePath = `${cacheKey}.json`;
+    const cachePath = `${cacheKey}.json`;
 
-		const value = await KV.get(cachePath);
-		if (value) {
-			return JSON.parse(value);
-		}
-		const result = await doGenerate();
-		// Write the result to the cache file
-		await KV.put(cachePath, JSON.stringify(result), {
-			expirationTtl: 60 * 60 * 24 * 30, // 30 days
-		});
-		return result;
-	},
+    const value = await kv.get([cachePath]);
+    if (value && value.value) {
+      return JSON.parse(value.value as string);
+    }
+    const result = await doGenerate();
+    console.log("result", result);
+    // Write the result to the cache file
+    await kv.set([cachePath], JSON.stringify(result));
+    return result;
+  },
 };
 
 export const wrappedLanguageModel = wrapLanguageModel({
-	model: model,
-	middleware: yourCacheMiddleware,
+  model: model,
+  middleware: yourCacheMiddleware,
 });

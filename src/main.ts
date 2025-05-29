@@ -1,71 +1,88 @@
-import { getUrlForOgImage } from './og';
-import { getAgent, postThread, Tweet } from './bluesky';
-import { getTweetForLastJo } from './journal';
+import { getUrlForOgImage } from "./og.tsx";
+import { getAgent, postThread, Tweet } from "./bluesky.ts";
+import { getTweetForLastJo } from "./journal/index.ts";
 
 export async function previewOg() {
-	const value = await getTweetForLastJo();
-	if (!value) {
-		throw new Error('No value found');
-	}
-	console.log('originalTweets', value);
+  const value = await getTweetForLastJo();
+  if (!value) {
+    throw new Error("No value found");
+  }
+  console.log("originalTweets", value);
 
-	const originalTweets = value?.object.tweets;
+  const originalTweets = value?.object.tweets;
 
-	// slice to remove the intro tweet
-	const textElements = originalTweets?.map((tweet) => tweet.title).slice(1, undefined);
-	const text = textElements.length > 3 ? textElements.slice(0, 3).join(', ') + '...' : textElements.join(', ');
+  // slice to remove the intro tweet
+  const textElements = originalTweets
+    ?.map((tweet) => tweet.title)
+    .slice(1, undefined);
+  const text = textElements.length > 3
+    ? textElements.slice(0, 3).join(", ") + "..."
+    : textElements.join(", ");
 
-	// const ogImageUrl =
-	// 'https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreibad7a6rca56zkkskkibw4yrkih3dsxbkiyypguzx6u57no53aifu@jpeg';
-	const ogImageUrl = getUrlForOgImage(text, value.date);
-	const redirectTo = new URL(ogImageUrl);
-	return new Response(null, {
-		status: 302,
-		headers: {
-			Location: redirectTo.toString(),
-		},
-	});
+  // const ogImageUrl =
+  // 'https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreibad7a6rca56zkkskkibw4yrkih3dsxbkiyypguzx6u57no53aifu@jpeg';
+  const ogImageUrl = getUrlForOgImage(text, value.date);
+  const redirectTo = new URL(ogImageUrl);
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: redirectTo.toString(),
+    },
+  });
 }
 
 export async function handleCron() {
-	const value = await getTweetForLastJo();
-	if (!value) {
-		throw new Error('No value found');
-	}
-	console.log('originalTweets', value);
+  const value = await getTweetForLastJo();
+  if (!value) {
+    throw new Error("No value found");
+  }
+  console.log("originalTweets", value);
 
-	const originalTweets = value?.object.tweets;
+  const originalTweets = value?.object.tweets;
 
-	// slice to remove the intro tweet
-	const textElements = originalTweets?.map((tweet) => tweet.title).slice(1, undefined);
-	const text = textElements.length > 3 ? textElements.slice(0, 3).join(', ') + '...' : textElements.join(', ');
+  // slice to remove the intro tweet
+  const textElements = originalTweets
+    ?.map((tweet) => tweet.title)
+    .slice(1, undefined);
+  const text = textElements.length > 3
+    ? textElements.slice(0, 3).join(", ") + "..."
+    : textElements.join(", ");
 
-	// const ogImageUrl =
-	// 'https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreibad7a6rca56zkkskkibw4yrkih3dsxbkiyypguzx6u57no53aifu@jpeg';
-	const ogImageUrl = getUrlForOgImage(text, value.date);
+  // const ogImageUrl =
+  // 'https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreibad7a6rca56zkkskkibw4yrkih3dsxbkiyypguzx6u57no53aifu@jpeg';
+  const ogImageUrl = getUrlForOgImage(text, value.date);
 
-	const tweets: Tweet[] =
-		originalTweets?.map((tweet, i) => ({
-			text: tweet.content,
-			linkDetails: i == 0 ? { title: tweet.title, link: value.url, imageUrl: ogImageUrl, description: tweet.content } : undefined,
-		})) ?? [];
+  const tweets: Tweet[] = originalTweets?.map((tweet, i) => ({
+    text: tweet.content,
+    linkDetails: i == 0
+      ? {
+        title: tweet.title,
+        link: value.url,
+        imageUrl: ogImageUrl,
+        description: tweet.content,
+      }
+      : undefined,
+  })) ?? [];
 
-	const agent = await getAgent();
-	console.log('agent', agent);
+  const agent = await getAgent();
+  console.log("agent", agent);
 
-	try {
-		console.log('trying to post with test post');
-		const res = await agent.post({ text: 'test post', $type: 'app.bsky.feed.post' });
-		console.log('res', res);
-	} catch (e) {
-		console.error('Error posting test post', e);
-	}
+  try {
+    console.log("trying to post with test post");
+    const res = await agent.post({
+      text: "test post",
+      $type: "app.bsky.feed.post",
+    });
+    console.log("res", res);
+  } catch (e) {
+    console.error("Error posting test post", e);
+  }
 
-	await postThread(agent, tweets);
+  await postThread(agent, tweets);
 
-	return new Response(JSON.stringify(value), {
-		headers: {
-			'Content-Type': 'application/json',
-		},
-	});
+  return new Response(JSON.stringify(value), {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 }

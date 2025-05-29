@@ -1,6 +1,9 @@
 {
-	"files.associations": {
-		"wrangler.json": "jsonc"
-	},
-	"typescript.tsdk": "node_modules/typescript/lib"
+  "deno.enablePaths": [
+    "./"
+  ],
+  "editor.inlayHints.enabled": "off",
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  }
 }

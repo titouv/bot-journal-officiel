@@ -400,6 +400,7 @@
     "https://esm.sh/linebreak@^1.1.0?target=denonext": "https://esm.sh/linebreak@1.1.0?target=denonext",
     "https://esm.sh/postcss-value-parser@^4.0.2?target=denonext": "https://esm.sh/postcss-value-parser@4.2.0?target=denonext",
     "https://esm.sh/postcss-value-parser@^4.2.0?target=denonext": "https://esm.sh/postcss-value-parser@4.2.0?target=denonext",
+    "https://esm.sh/preact": "https://esm.sh/preact@10.26.8",
     "https://esm.sh/tiny-inflate@^1.0.0?target=denonext": "https://esm.sh/tiny-inflate@1.0.3?target=denonext",
     "https://esm.sh/unicode-trie@^2.0.0?target=denonext": "https://esm.sh/unicode-trie@2.0.0?target=denonext",
     "https://esm.sh/yoga-layout-prebuilt@^1.10.0?target=denonext": "https://esm.sh/yoga-layout-prebuilt@1.10.0?target=denonext"
@@ -428,6 +429,8 @@
     "https://esm.sh/linebreak@1.1.0?target=denonext": "3348208f472aeb6c1b66d784463da674fab1d203f92aa7b1f91e38b52ddb3b16",
     "https://esm.sh/postcss-value-parser@4.2.0/denonext/postcss-value-parser.mjs": "2734c0eb4eb5e6a9905fb179ed2f329a346ac076735dbf0bc889276cbfe952bc",
     "https://esm.sh/postcss-value-parser@4.2.0?target=denonext": "f11ba11f7fe1a5768433011193e133bf80a697154aab65f582bf653305a571d1",
+    "https://esm.sh/preact@10.26.8": "f6c6195e67293b6df707b53dd3075ca149604e1ba989c7832179b3c1b7e8a302",
+    "https://esm.sh/preact@10.26.8/denonext/preact.mjs": "15cb76ed3f64c60ee55efae71db9561133cbb37af609921ddef445c4a543fad2",
     "https://esm.sh/react@18.2.0": "fed8aeb7d240bb42a2167c9c7c6e842e128c7630cbcb08c4d61c9c1926f89c75",
     "https://esm.sh/react@18.2.0/denonext/react.mjs": "a986c2876dc2f73879f395e677dc34cb751f260e69db16364810655f884df173",
     "https://esm.sh/satori@0.0.40": "b5c395e91292bad4b41152ebf9c669d038ae49c8829aeee3ec6daafc5a939656",

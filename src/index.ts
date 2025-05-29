@@ -14,8 +14,9 @@
 import { handleCron, previewOg } from "./main.ts";
 import { getTweetForLastJo } from "./journal/index.ts";
 import { deleteAllTweetsFromAccount, getAgent } from "./bluesky.ts";
-import { onRequestOgImage, simpleHandler } from "./og.tsx";
+import { onRequestOgImage } from "./og.tsx";
 import { redis } from "./redis.ts";
+import { simpleHandler } from "./simple-og.tsx";
 
 async function fetchHandler(request: Request): Promise<Response> {
   const url = new URL(request.url);

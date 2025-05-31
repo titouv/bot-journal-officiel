@@ -67,17 +67,6 @@ export async function handleCron() {
   const agent = await getAgent();
   console.log("agent", agent);
 
-  try {
-    console.log("trying to post with test post");
-    const res = await agent.post({
-      text: "test post",
-      $type: "app.bsky.feed.post",
-    });
-    console.log("res", res);
-  } catch (e) {
-    console.error("Error posting test post", e);
-  }
-
   await postThread(agent, tweets);
 
   return new Response(JSON.stringify(value), {

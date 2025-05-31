@@ -20,6 +20,8 @@ export async function getToken() {
     },
   );
   if (!res.ok) {
+    const error = await res.json();
+    console.error(error);
     throw new Error("Failed to get token");
   }
 
@@ -31,4 +33,9 @@ export async function getToken() {
     expires_in: number;
     scope: string;
   };
+}
+
+if (import.meta.main) {
+  const token = await getToken();
+  console.log(token);
 }

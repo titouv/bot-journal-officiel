@@ -164,10 +164,10 @@ async function fetchAllLiens(
     if (detail) {
       allLienDetails[id] = detail;
     }
-    // // wait between 1000ms and 2000ms
-    // await new Promise((resolve) =>
-    //   setTimeout(resolve, (Math.random() + 1) * 1000)
-    // );
+    // wait between 1000ms and 2000ms
+    await new Promise((resolve) =>
+      setTimeout(resolve, (Math.random() + 1) * 1000)
+    );
   }
 
   return allLienDetails;

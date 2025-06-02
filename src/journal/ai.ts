@@ -8,7 +8,9 @@ const google = createGoogleGenerativeAI({
   apiKey: env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 
-const model = google("gemini-2.0-flash");
+// const model = google("gemini-2.0-flash");
+
+const model = google("gemini-2.5-flash-preview-05-20");
 
 import crypto from "node:crypto";
 

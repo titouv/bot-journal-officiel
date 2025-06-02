@@ -7,20 +7,9 @@ export async function previewOg() {
   if (!value) {
     throw new Error("No value found");
   }
-  console.log("originalTweets", value);
 
-  const originalTweets = value?.object.tweets;
+  const text = value.object.title;
 
-  // slice to remove the intro tweet
-  const textElements = originalTweets
-    ?.map((tweet) => tweet.title)
-    .slice(1, undefined);
-  const text = textElements.length > 3
-    ? textElements.slice(0, 3).join(", ") + "..."
-    : textElements.join(", ");
-
-  // const ogImageUrl =
-  // 'https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreibad7a6rca56zkkskkibw4yrkih3dsxbkiyypguzx6u57no53aifu@jpeg';
   const ogImageUrl = getUrlForOgImage(text, value.date);
   const redirectTo = new URL(ogImageUrl);
   return new Response(null, {
@@ -40,13 +29,7 @@ export async function handleCron() {
 
   const originalTweets = value?.object.tweets;
 
-  // slice to remove the intro tweet
-  const textElements = originalTweets
-    ?.map((tweet) => tweet.title)
-    .slice(1, undefined);
-  const text = textElements.length > 3
-    ? textElements.slice(0, 3).join(", ") + "..."
-    : textElements.join(", ");
+  const text = value.object.title;
 
   // const ogImageUrl =
   // 'https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreibad7a6rca56zkkskkibw4yrkih3dsxbkiyypguzx6u57no53aifu@jpeg';

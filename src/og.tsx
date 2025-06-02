@@ -48,7 +48,7 @@ async function downloadFont(key: FontKey) {
 }
 
 export function getUrlForOgImage(text: string, date: string) {
-  const baseUrl = "http://localhost:8787";
+  const baseUrl = "http://localhost:8000";
   const url = new URL(`${baseUrl}/og`);
   url.searchParams.set("text", text);
   url.searchParams.set("date", date);
@@ -92,16 +92,22 @@ export const onRequestOgImage = async (req: Request) => {
             justifyContent: "space-between",
             height: "100%",
             paddingLeft: "50px",
-            paddingTop: "100px",
-            paddingBottom: "100px",
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              height: "100%",
+            }}
+          >
             <span
               style={{
                 fontFamily: "MarianneBold",
                 fontSize: 38,
                 color: "gray",
+                // backgroundColor: "yellow",
               }}
             >
               {date}
@@ -110,25 +116,27 @@ export const onRequestOgImage = async (req: Request) => {
               style={{
                 fontFamily: "MarianneExtraBold",
                 fontSize: 74,
-                width: "900px",
+                width: "800px",
                 color: "black",
                 lineHeight: 1,
                 paddingBottom: "40px",
+                // backgroundColor: "red",
               }}
             >
               {text}
             </span>
+            <span
+              style={{
+                fontFamily: "MarianneBold",
+                fontSize: 34,
+                color: "gray",
+                letterSpacing: "-0.02em",
+                // backgroundColor: "blue",
+              }}
+            >
+              Journal Officiel de la République Française
+            </span>
           </div>
-          <span
-            style={{
-              fontFamily: "MarianneBold",
-              fontSize: 34,
-              color: "gray",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            Journal Officiel de la République Française
-          </span>
         </div>
         <div
           style={{

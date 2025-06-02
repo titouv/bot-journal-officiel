@@ -11,14 +11,19 @@ const BASE_URL =
 
 // --- 1. List the Last N "Journal Officiel" ---
 
-let GLOBAL_BEARER: string | null = null;
+let GLOBAL_BEARER: { token: string; expiresAt: Date } | null = null;
 
 async function getAccessToken() {
-  if (GLOBAL_BEARER) return GLOBAL_BEARER;
-  const BEARER = (await getToken()).access_token;
-  console.log("BEARER", BEARER);
-  GLOBAL_BEARER = BEARER;
-  return BEARER;
+  if (GLOBAL_BEARER && GLOBAL_BEARER.expiresAt > new Date()) {
+    return GLOBAL_BEARER.token;
+  }
+  const token = await getToken();
+  console.log("BEARER", token);
+  GLOBAL_BEARER = {
+    token: token.access_token,
+    expiresAt: new Date(Date.now() + token.expires_in * 1000),
+  };
+  return GLOBAL_BEARER.token;
 }
 
 export async function listLastNJo(

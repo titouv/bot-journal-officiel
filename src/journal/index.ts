@@ -8,6 +8,9 @@ import type {
 } from "./scraper/types.ts";
 import { wrappedLanguageModel } from "./ai.ts";
 import { z } from "zod";
+import { env } from "../env.ts";
+import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
+import { getUrlForOgImage } from "../og.tsx";
 
 type Test =
   | {
@@ -164,10 +167,14 @@ async function fetchAllLiens(
     if (detail) {
       allLienDetails[id] = detail;
     }
-    // wait between 1000ms and 2000ms
-    await new Promise((resolve) =>
-      setTimeout(resolve, (Math.random() + 1) * 1000)
-    );
+
+    if (env.WAIT) {
+      console.log("waiting", env.WAIT);
+      // wait between 1000ms and 2000ms
+      await new Promise((resolve) =>
+        setTimeout(resolve, (Math.random() + 1) * 1000)
+      );
+    }
   }
 
   return allLienDetails;
@@ -291,19 +298,43 @@ Utilise des emojis avec parcimonie pour dynamiser les tweets.
     model: wrappedLanguageModel,
     system: systemPrompt,
     schema: z.object({
+      title: z.string().describe(
+        `
+le titre du tweet pour l'image de une, reprend les thèmes principaux du JO, exemples:
+- "Santé & Outre-mer, Transport médical, Agriculture & Mayotte"
+- "Éducation nationale, Transition écologique & Protection sociale"
+- "Justice, Énergies renouvelables & Formation professionnelle" 
+- "Économie, Biodiversité & Sécurité"
+- "Réforme des lycées, Emploi & Collectivités territoriales"
+`.trim(),
+      ),
       tweets: z.array(
         z.object({
           content: z.string().describe("le contenu du tweet"),
-          title: z.string().describe("juste le thème"),
+          // title: z.string().describe("juste le thème"),
         }),
       ),
     }),
     prompt: markdown,
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          thinkingBudget: 0,
+        },
+      } satisfies GoogleGenerativeAIProviderOptions,
+    },
   });
 
   const year = new Date(container.datePubli).getFullYear();
   const month = new Date(container.datePubli).getMonth() + 1;
   const day = new Date(container.datePubli).getDate();
+
+  const date = `${day.toString().padStart(2, "0")}/${
+    month.toString().padStart(2, "0")
+  }/${year}`;
+
+  const text = resAi.object.title;
+  const ogImageUrl = getUrlForOgImage(text, date);
 
   return {
     // https://www.legifrance.gouv.fr/jorf/jo/2025/05/25/0122
@@ -315,5 +346,6 @@ Utilise des emojis avec parcimonie pour dynamiser les tweets.
     date: `${day.toString().padStart(2, "0")}/${
       month.toString().padStart(2, "0")
     }/${year}`,
+    preview: ogImageUrl,
   };
 }

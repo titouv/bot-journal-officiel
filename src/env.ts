@@ -7,6 +7,9 @@ const env = {
   BLUESKY_PASSWORD: Deno.env.get("BLUESKY_PASSWORD"),
   GOOGLE_GENERATIVE_AI_API_KEY: Deno.env.get("GOOGLE_GENERATIVE_AI_API_KEY"),
   REDIS_URL: Deno.env.get("REDIS_URL"),
+  WAIT: Deno.env.get("WAIT") != undefined
+    ? Deno.env.get("WAIT") === "true"
+    : true,
 };
 
 export { env };

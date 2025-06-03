@@ -249,13 +249,17 @@ export async function getTweetForLastJo() {
   // }
 
   const container = firstContainer;
+  console.log("container", container);
 
+  console.log("getJoSummary", container.id);
   const joSummaryResponse = await getJoSummary(container.id);
+  console.log("joSummaryResponse", joSummaryResponse);
 
   if (!joSummaryResponse) {
     throw new Error("No JO summary response found");
   }
 
+  console.log("renderJoToMarkdown");
   const markdown = await renderJoToMarkdown(
     joSummaryResponse,
     new Date(container.datePubli).toLocaleDateString("fr-FR", {
@@ -264,7 +268,7 @@ export async function getTweetForLastJo() {
       day: "numeric",
     }),
   );
-
+  console.log("markdown", markdown);
   console.log(
     new Date(container.datePubli).toLocaleDateString("fr-FR", {
       year: "numeric",

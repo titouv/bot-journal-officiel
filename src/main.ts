@@ -21,6 +21,7 @@ export async function previewOg() {
 }
 
 export async function handleCron() {
+  console.log("handleCron");
   const value = await getTweetForLastJo();
   if (!value) {
     throw new Error("No value found");
@@ -39,7 +40,7 @@ export async function handleCron() {
     text: tweet.content,
     linkDetails: i == 0
       ? {
-        title: tweet.title,
+        title: tweet.content,
         link: value.url,
         imageUrl: ogImageUrl,
         description: tweet.content,

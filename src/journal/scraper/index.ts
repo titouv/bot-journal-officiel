@@ -14,9 +14,12 @@ const BASE_URL =
 let GLOBAL_BEARER: { token: string; expiresAt: Date } | null = null;
 
 async function getAccessToken() {
+  console.log("running getAccessToken");
   if (GLOBAL_BEARER && GLOBAL_BEARER.expiresAt > new Date()) {
+    console.log("using cached BEARER");
     return GLOBAL_BEARER.token;
   }
+  console.log("getting new BEARER");
   const token = await getToken();
   console.log("BEARER", token);
   GLOBAL_BEARER = {
@@ -39,13 +42,16 @@ export async function listLastNJo(
   const payload = { nbElement: n };
 
   try {
+    console.log("fetching last N JOs");
     const response = await globalThis.fetch(url, {
       method: "POST",
       headers: headers,
       body: JSON.stringify(payload),
     });
+    console.log("response", response);
 
     if (!response.ok) {
+      console.error("HTTP error! status: ", response.status);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 

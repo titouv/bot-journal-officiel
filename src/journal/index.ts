@@ -268,7 +268,7 @@ export async function getTweetForLastJo() {
       day: "numeric",
     }),
   );
-  console.log("markdown", markdown);
+  console.log("markdown", markdown.length);
   console.log(
     new Date(container.datePubli).toLocaleDateString("fr-FR", {
       year: "numeric",

@@ -83,19 +83,23 @@ export async function getJoSummary(
   };
 
   try {
+    console.log("fetching JO details");
     const response = await fetch(url, {
       method: "POST",
       headers: headers,
       body: JSON.stringify(payload),
     });
+    console.log("response", response);
 
     if (!response.ok) {
+      console.error("HTTP error! status: ", response.status);
       const text = await response.text();
       console.error(text);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = (await response.json()) as GetJosResponse;
+    console.log("data", data);
     return data;
   } catch (e) {
     console.error(`Error getting JO details: ${e}`);

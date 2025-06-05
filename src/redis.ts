@@ -6,7 +6,14 @@ let redis: ReturnType<typeof createClient>;
 async function initRedis() {
   redis = createClient({
     url: env.REDIS_URL,
+    socket: {
+      keepAlive: true,
+    },
   });
+
+  redis.on("error", (err) => console.error("Redis Client Error", err));
+  redis.on("reconnecting", () => console.log("Redis is reconnecting..."));
+
   await redis.connect();
 }
 

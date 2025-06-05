@@ -276,26 +276,36 @@ export async function getTweetForLastJo() {
       day: "numeric",
     }),
   );
-
   const systemPrompt = `
-Tu es un assistant spécialisé dans la création de tweets informatifs à partir des publications du Journal officiel. Ton objectif est de proposer un maximum de 5 tweets pertinents et concis, destinés à être publiés dans un fil Twitter. Cependant, en fonction du contenu du Journal Officiel, il est possible que seulement 3 tweets soient suffisants.
+Crée des tweets informatifs à partir du Journal officiel ci-dessous. Format de sortie attendu:
 
-Priorise les informations les plus importantes et susceptibles d'intéresser un large public. Voici des critères de pertinence à considérer :
+1. Un tweet d'introduction résumant les principaux thèmes du JO, terminé par 🧵
+2. Entre 3 et 5 tweets détaillant les informations importantes, classées par ordre d'importance
 
-- **Impact direct sur la vie quotidienne des citoyens :** Nouvelles lois affectant les impôts, la santé, l'éducation, etc.
-- **Changements majeurs dans la réglementation :** Nouvelles normes environnementales, règles de sécurité, etc.
-- **Annonces gouvernementales importantes :** Plans de relance économique, nouvelles politiques publiques, etc.
-- **Informations concernant les droits et obligations des citoyens :** Nouvelles procédures administratives, droits des consommateurs, etc.
+CRITÈRES DE SÉLECTION:
+- Impact direct sur la vie quotidienne
+- Changements majeurs de réglementation
+- Annonces gouvernementales importantes
+- Droits et obligations des citoyens
 
-Évite de couvrir tous les éléments du Journal officiel ; concentre-toi sur ceux qui présentent un intérêt général ou une nouveauté significative. Exclus les nominations ou les sujets très spécifiques qui ne concernent qu'une petite partie de la population.
+RÈGLES DE RÉDACTION:
+- Ton factuel et objectif
+- Pas de numéros de textes
+- Pas de hashtags/mentions/liens
+- Pas de points d'exclamation
+- Utilisation d'emojis (avec parcimonie). 1 max par tweet.
+- Uniquement les nominations très importantes
 
-Ne pas mentionner les numéros des textes dans les tweets.
+PROCESSUS:
+1. Analyse le JO pour identifier les sujets d'intérêt général
+2. Sélectionne les 3-5 informations les plus impactantes
+3. Rédige le tweet d'introduction
+4. Rédige les tweets détaillés par ordre d'importance
+5. Vérifie le respect des règles de format
 
-Tu dois écrire les tweets par ordre d'importance, en commençant par les plus importants.
+IMPORTANT: Adapte le nombre de tweets à la quantité d'informations pertinentes du jour. Certains JO courts peuvent contenir beaucoup d'informations importantes, d'autres longs peuvent en avoir peu.
 
-Il faut aussi un tweet d'introduction du feed, qui résume le contenu du Journal officiel.
-
-Utilise des emojis avec parcimonie pour dynamiser les tweets.
+REMEMBER: Format = 1 tweet intro + 3-5 tweets détaillés maximum, classés par importance.
 `.trim();
 
   const resAi = await generateObject({
@@ -323,11 +333,26 @@ le titre du tweet pour l'image de une, reprend les thèmes principaux du JO, exe
     providerOptions: {
       google: {
         thinkingConfig: {
-          thinkingBudget: 0,
+          // thinkingBudget: 0,
+          includeThoughts: true,
         },
       } satisfies GoogleGenerativeAIProviderOptions,
     },
   });
+
+  // const fullText = (resAi.response.body as any).candidates[0].content.parts.map(
+  //   (e) => e.text,
+  // ).join("\n\b");
+
+  // Deno.writeTextFile(
+  //   "thinking.json",
+  //   JSON.stringify(resAi, null, 2),
+  // );
+
+  // Deno.writeTextFile(
+  //   "thinking.txt",
+  //   fullText,
+  // );
 
   const year = new Date(container.datePubli).getFullYear();
   const month = new Date(container.datePubli).getMonth() + 1;

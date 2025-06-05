@@ -40,7 +40,7 @@ export async function handleCron() {
     text: tweet.content,
     linkDetails: i == 0
       ? {
-        title: tweet.content,
+        title: "JO " + value.date,
         link: value.url,
         imageUrl: ogImageUrl,
         description: tweet.content,

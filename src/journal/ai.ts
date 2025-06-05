@@ -23,13 +23,16 @@ import { redis } from "../redis.ts";
 const yourCacheMiddleware: LanguageModelV1Middleware = {
   wrapGenerate: async ({ doGenerate, params }) => {
     const cacheKey = hash(JSON.stringify(params));
+    console.log("[AI CACHE] cacheKey", cacheKey);
 
     const value = await redis.get(cacheKey);
     if (value) {
+      console.log("[AI CACHE] cache hit", cacheKey);
       return JSON.parse(value);
     }
+    console.log("[AI CACHE] cache miss", cacheKey);
     const result = await doGenerate();
-    console.log("result", result);
+    console.log("[AI CACHE] result", result);
     // Write the result to the cache file
     await redis.set(cacheKey, JSON.stringify(result));
     return result;

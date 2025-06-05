@@ -9,7 +9,7 @@ export async function fetch(
 
   console.log("redis get", cacheKey);
   const cached = await redis.get(cacheKey);
-  console.log("redis get res", cached);
+  console.log("redis get res", cached ? "hit" : "miss");
 
   if (cached) {
     console.log(`Cache hit for: ${url}`);

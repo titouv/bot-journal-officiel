@@ -5,8 +5,11 @@ export async function fetch(
   options: RequestInit = {},
 ): Promise<Response> {
   const cacheKey = JSON.stringify({ url, body: options.body }); // dont use header because auth token changes
+  console.log("cacheKey", cacheKey);
 
+  console.log("redis get", cacheKey);
   const cached = await redis.get(cacheKey);
+  console.log("redis get res", cached);
 
   if (cached) {
     console.log(`Cache hit for: ${url}`);

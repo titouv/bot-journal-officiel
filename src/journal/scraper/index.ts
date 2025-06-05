@@ -16,7 +16,11 @@ let GLOBAL_BEARER: { token: string; expiresAt: Date } | null = null;
 async function getAccessToken() {
   console.log("running getAccessToken");
   if (GLOBAL_BEARER && GLOBAL_BEARER.expiresAt > new Date()) {
-    console.log("using cached BEARER");
+    console.log(
+      "using cached BEARER",
+      "expiring in ",
+      GLOBAL_BEARER.expiresAt.getTime() - new Date().getTime(),
+    );
     return GLOBAL_BEARER.token;
   }
   console.log("getting new BEARER");

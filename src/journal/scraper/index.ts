@@ -26,9 +26,12 @@ async function getAccessToken() {
   console.log("getting new BEARER");
   const token = await getToken();
   console.log("BEARER", token);
+  // harcode 30 seconds
+  const HARDCODED_EXPIRES_IN = 30000; // in ms
+
   GLOBAL_BEARER = {
     token: token.access_token,
-    expiresAt: new Date(Date.now() + token.expires_in * 1000),
+    expiresAt: new Date(Date.now() + HARDCODED_EXPIRES_IN),
   };
   return GLOBAL_BEARER.token;
 }

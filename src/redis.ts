@@ -6,6 +6,7 @@ let redis: ReturnType<typeof createClient>;
 async function initRedis() {
   redis = createClient({
     url: env.REDIS_URL,
+    pingInterval: 5000,
     socket: {
       keepAlive: true,
     },

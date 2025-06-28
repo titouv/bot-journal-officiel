@@ -78,7 +78,19 @@ export async function post(
 ) {
   console.log("POSTING", tweet, threadsRefs);
 
-  const { text, linkDetails } = tweet;
+  let { text, linkDetails } = tweet;
+
+  // Truncate text to fit Bluesky's limits
+  const MAX_TEXT_LENGTH = 300;
+  const ELLIPSIS = "...";
+
+  if (text.length > MAX_TEXT_LENGTH) {
+    text = text.substring(0, MAX_TEXT_LENGTH - ELLIPSIS.length) + ELLIPSIS;
+  }
+
+  if (linkDetails && linkDetails.description.length > MAX_TEXT_LENGTH) {
+    linkDetails.description = linkDetails.description.substring(0, MAX_TEXT_LENGTH - ELLIPSIS.length) + ELLIPSIS;
+  }
 
   let blobSave: BlobRef | undefined;
 

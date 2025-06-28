@@ -305,7 +305,7 @@ PROCESSUS:
 
 IMPORTANT: Adapte le nombre de tweets à la quantité d'informations pertinentes du jour. Certains JO courts peuvent contenir beaucoup d'informations importantes, d'autres longs peuvent en avoir peu.
 
-REMEMBER: Format = 1 tweet intro + 3-5 tweets détaillés maximum, classés par importance.
+REMEMBER: Format = 1 tweet intro + 3-5 tweets détaillés maximum, classés par importance. Les tweets doivent faire moins de 280 caractères.
 `.trim();
 
   const resAi = await generateObject({

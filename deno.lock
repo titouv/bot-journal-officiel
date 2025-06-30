@@ -12,7 +12,7 @@
     "npm:@wevm/vercel-og@~0.6.12": "0.6.12",
     "npm:ai@^4.3.16": "4.3.16_react@19.1.0_zod@3.25.32",
     "npm:multiformats@^13.3.6": "13.3.6",
-    "npm:neverthrow@8": "8.2.0",
+    "npm:neverthrow@^8.2.0": "8.2.0",
     "npm:react@^19.1.0": "19.1.0",
     "npm:redis@^5.1.1": "5.1.1_@redis+client@5.1.1",
     "npm:zod@^3.25.32": "3.25.32"
@@ -472,7 +472,7 @@
       "npm:@wevm/vercel-og@~0.6.12",
       "npm:ai@^4.3.16",
       "npm:multiformats@^13.3.6",
-      "npm:neverthrow@8",
+      "npm:neverthrow@^8.2.0",
       "npm:react@^19.1.0",
       "npm:redis@^5.1.1",
       "npm:zod@^3.25.32"

@@ -1,20 +1,22 @@
 import { AtpAgent, ComAtprotoRepoStrongRef, RichText } from "@atproto/api";
 import { BlobRef } from "@atproto/lexicon";
-
 import { env } from "./env.ts";
+import { ok, err, Result, ResultAsync } from "neverthrow";
 
 const envBluesky = {
   identifier: env.BLUESKY_USERNAME!,
   password: env.BLUESKY_PASSWORD!,
 };
 
-export async function getAgent() {
-  // Create a Bluesky Agent
+export function getAgent(): ResultAsync<AtpAgent, string> {
   const agent = new AtpAgent({
     service: "https://bsky.social",
   });
-  await agent.login(envBluesky);
-  return agent;
+  
+  return ResultAsync.fromPromise(
+    agent.login(envBluesky),
+    (error) => `Failed to login to Bluesky: ${error}`
+  ).map(() => agent);
 }
 
 export type Tweet = {
@@ -27,30 +29,44 @@ export type Tweet = {
   };
 };
 
-export async function deleteAllTweetsFromAccount(agent: AtpAgent) {
-  const { data } = await agent.getProfile({ actor: envBluesky.identifier });
+export function deleteAllTweetsFromAccount(agent: AtpAgent): ResultAsync<any, string> {
+  return ResultAsync.fromPromise(
+    agent.getProfile({ actor: envBluesky.identifier }),
+    (error) => `Failed to get profile: ${error}`
+  ).andThen(({ data }) => {
+    return ResultAsync.fromPromise(
+      agent.getAuthorFeed({
+        actor: data.did,
+        filter: "posts_and_author_threads",
+        limit: 30,
+      }),
+      (error) => `Failed to get author feed: ${error}`
+    ).andThen(({ data: dataFeed }) => {
+      const deletePromises = dataFeed.feed.map((post) =>
+        ResultAsync.fromPromise(
+          agent.deletePost(post.post.uri),
+          (error) => `Failed to delete post: ${error}`
+        )
+      );
 
-  const { data: dataFeed } = await agent.getAuthorFeed({
-    actor: data.did,
-    filter: "posts_and_author_threads",
-    limit: 30,
+      return ResultAsync.combine(deletePromises).map(() => dataFeed);
+    });
   });
-
-  for (const post of dataFeed.feed) {
-    await agent.deletePost(post.post.uri);
-  }
-
-  return dataFeed;
 }
 
-export async function postThread(agent: AtpAgent, tweets: Tweet[]) {
+export function postThread(agent: AtpAgent, tweets: Tweet[]): ResultAsync<void, string> {
   let parentRef: ComAtprotoRepoStrongRef.Main | undefined;
   let previousPostRef: ComAtprotoRepoStrongRef.Main | undefined;
 
-  for (let i = 0; i < tweets.length; i++) {
-    console.log("Posting tweet", i);
-    const tweet = tweets[i];
-    const res = await post(
+  const postSequentially = (index: number): ResultAsync<void, string> => {
+    if (index >= tweets.length) {
+      console.log("Done posting tweets");
+      return ResultAsync.fromSafePromise(Promise.resolve());
+    }
+
+    console.log("Posting tweet", index);
+    const tweet = tweets[index];
+    return post(
       agent,
       tweet,
       parentRef
@@ -59,118 +75,107 @@ export async function postThread(agent: AtpAgent, tweets: Tweet[]) {
           previousPostRef: previousPostRef!,
         }
         : undefined,
-    );
-    if (i == 0) {
-      parentRef = res;
-    }
-    previousPostRef = res;
-  }
-  console.log("Done posting tweets");
+    ).andThen((res) => {
+      if (index === 0) {
+        parentRef = res;
+      }
+      previousPostRef = res;
+      return postSequentially(index + 1);
+    });
+  };
+
+  return postSequentially(0);
 }
 
-export async function post(
+export function post(
   agent: AtpAgent,
   tweet: Tweet,
   threadsRefs?: {
     parentRef: ComAtprotoRepoStrongRef.Main;
     previousPostRef: ComAtprotoRepoStrongRef.Main;
   },
-) {
+): ResultAsync<ComAtprotoRepoStrongRef.Main, string> {
   console.log("POSTING", tweet, threadsRefs);
 
   const { text, linkDetails } = tweet;
 
-  let blobSave: BlobRef | undefined;
+  const uploadBlob: ResultAsync<BlobRef | undefined, string> = linkDetails && linkDetails.imageUrl
+    ? ResultAsync.fromPromise(
+        fetch(linkDetails.imageUrl),
+        (error) => `Failed to fetch image: ${error}`
+      ).andThen((resImage) => {
+        console.log("FETCHING IMAGE RES", resImage.status);
+        console.log("FETCHING IMAGE RES", resImage.statusText);
+        console.log("FETCHING IMAGE RES", resImage.headers);
+        console.log("FETCHING IMAGE RES", resImage.body);
+        
+        return ResultAsync.fromPromise(
+          resImage.blob(),
+          (error) => `Failed to get blob: ${error}`
+        ).andThen((blob) => {
+          return ResultAsync.fromPromise(
+            agent.uploadBlob(blob),
+            (error) => `Failed to upload blob: ${error}`
+          ).andThen(({ data, success }) => {
+            console.log("UPLOADED IMAGE", data, success);
+            if (!success) {
+              return err("Failed to upload blob");
+            }
+            return ok(data.blob);
+          });
+        });
+      })
+    : ResultAsync.fromSafePromise(Promise.resolve(undefined));
 
-  if (linkDetails && linkDetails.imageUrl) {
-    console.log("UPLOADING IMAGE", linkDetails.imageUrl);
-    const resImage = await fetch(linkDetails.imageUrl);
-    console.log("FETCHING IMAGE RES", resImage.status);
-    console.log("FETCHING IMAGE RES", resImage.statusText);
-    console.log("FETCHING IMAGE RES", resImage.headers);
-    console.log("FETCHING IMAGE RES", resImage.body);
-    const blob = await resImage.blob();
-    const { data, success } = await agent.uploadBlob(blob);
-    console.log("UPLOADED IMAGE", data, success);
-    if (!success) {
-      throw new Error("Failed to upload blob");
-    }
-    blobSave = data.blob;
-  }
+  return uploadBlob.andThen((blobSave: BlobRef | undefined) => {
+    const rt = new RichText({
+      text: text,
+    });
+    console.log("rt before detectFacets", rt);
+    
+    return ResultAsync.fromPromise(
+      rt.detectFacets(agent),
+      (error) => `Failed to detect facets: ${error}`
+    ).andThen(() => {
+      console.log("rt after detectFacets", rt);
 
-  const rt = new RichText({
-    text: text,
+      const postData = {
+        text: rt.text,
+        facets: rt.facets,
+        reply: threadsRefs
+          ? {
+            root: threadsRefs.parentRef,
+            parent: threadsRefs.previousPostRef,
+            $type: "app.bsky.feed.post#replyRef" as const,
+          }
+          : undefined,
+        embed: linkDetails
+          ? {
+            $type: "app.bsky.embed.external" as const,
+            external: {
+              $type: "app.bsky.embed.external#external" as const,
+              uri: linkDetails.link,
+              title: linkDetails.title,
+              description: linkDetails.description,
+              ...(blobSave ? { thumb: blobSave } : {}),
+            },
+          }
+          : undefined,
+      };
+
+      if (linkDetails && blobSave) {
+        console.log("POSTING WITH LINK DETAILS", text, linkDetails);
+      } else {
+        console.log("POSTING WITHOUT LINK DETAILS", text);
+      }
+
+      return ResultAsync.fromPromise(
+        agent.post(postData),
+        (error) => `Failed to post: ${error}`
+      ).map((res) => {
+        console.log("res after post", res);
+        return res;
+      });
+    });
   });
-  console.log("rt before detectFacets", rt);
-  await rt.detectFacets(agent); // automatically detects mentions and links
-  console.log("rt after detectFacets", rt);
-
-  if (linkDetails && blobSave) {
-    console.log("POSTING WITH LINK DETAILS", text, linkDetails);
-    const res = await agent.post({
-      text: rt.text,
-      facets: rt.facets,
-      reply: threadsRefs
-        ? {
-          root: threadsRefs.parentRef,
-          parent: threadsRefs.previousPostRef,
-          $type: "app.bsky.feed.post#replyRef",
-        }
-        : undefined,
-      embed: {
-        $type: "app.bsky.embed.external",
-        external: {
-          $type: "app.bsky.embed.external#external",
-          uri: linkDetails.link,
-          title: linkDetails.title,
-          description: linkDetails.description,
-          thumb: blobSave,
-        },
-      },
-    });
-    console.log("res after post", res);
-    return res;
-  } else {
-    console.log("POSTING WITHOUT LINK DETAILS", text);
-    const res = await agent.post({
-      text: rt.text,
-      facets: rt.facets,
-      reply: threadsRefs
-        ? {
-          root: threadsRefs.parentRef,
-          parent: threadsRefs.previousPostRef,
-          $type: "app.bsky.feed.post#replyRef",
-        }
-        : undefined,
-      embed: linkDetails
-        ? {
-          $type: "app.bsky.embed.external",
-          external: {
-            $type: "app.bsky.embed.external#external",
-            uri: linkDetails.link,
-            title: linkDetails.title,
-            description: linkDetails.description,
-          },
-        }
-        : undefined,
-    });
-    console.log("res after post", res);
-    return res;
-  }
 }
-
-// async function main() {
-// 	console.log('Logging in...', env);
-
-// 	const imageUrl =
-// 		'https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:z72i7hdynmk6r22z27h6tvur/bafkreibad7a6rca56zkkskkibw4yrkih3dsxbkiyypguzx6u57no53aifu@jpeg';
-
-// 	const linkDetails = {
-// 		link: 'https://www.opengraph.xyz',
-// 		title: "Bluesky's CEO on the Future of Social Media | SXSW LIVE",
-// 		description: 'YouTube video by SXSW',
-// 		imageUrl: imageUrl,
-// 	};
-
-// 	await postOnBluesky('🙂', linkDetails);
-// }

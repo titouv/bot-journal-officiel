@@ -12,6 +12,7 @@
     "npm:@wevm/vercel-og@~0.6.12": "0.6.12",
     "npm:ai@^4.3.16": "4.3.16_react@19.1.0_zod@3.25.32",
     "npm:multiformats@^13.3.6": "13.3.6",
+    "npm:neverthrow@8": "8.2.0",
     "npm:react@^19.1.0": "19.1.0",
     "npm:redis@^5.1.1": "5.1.1_@redis+client@5.1.1",
     "npm:zod@^3.25.32": "3.25.32"
@@ -148,6 +149,11 @@
     },
     "@resvg/resvg-wasm@2.4.0": {
       "integrity": "sha512-C7c51Nn4yTxXFKvgh2txJFNweaVcfUPQxwEUFw4aWsCmfiBDJsTSwviIF8EcwjQ6k8bPyMWCl1vw4BdxE569Cg=="
+    },
+    "@rollup/rollup-linux-x64-gnu@4.41.1": {
+      "integrity": "sha512-cWBOvayNvA+SyeQMp79BHPK8ws6sHSsYnK5zDcsC3Hsxr1dgTABKjMnMslPq1DvZIp6uO7kIWhiGwaTdR4Og9A==",
+      "os": ["linux"],
+      "cpu": ["x64"]
     },
     "@shuding/opentype.js@1.4.0-beta.0": {
       "integrity": "sha512-3NgmNyH3l/Hv6EvsWJbsvpcpUba6R8IREQ83nH83cyakCw7uM1arZKNfHwv1Wz6jgqrF/j4x5ELvR6PnK9nTcA==",
@@ -286,6 +292,12 @@
     "nanoid@3.3.11": {
       "integrity": "sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==",
       "bin": true
+    },
+    "neverthrow@8.2.0": {
+      "integrity": "sha512-kOCT/1MCPAxY5iUV3wytNFUMUolzuwd/VF/1KCx7kf6CutrOsTie+84zTGTpgQycjvfLdBBdvBvFLqFD2c0wkQ==",
+      "optionalDependencies": [
+        "@rollup/rollup-linux-x64-gnu"
+      ]
     },
     "pako@0.2.9": {
       "integrity": "sha512-NUcwaKxUxWrZLpDG+z/xZaCgQITkA/Dv4V/T6bw7VON6l1Xz/VnrBqrYjZQ12TamKHzITTfOEIYUj48y2KXImA=="
@@ -460,6 +472,7 @@
       "npm:@wevm/vercel-og@~0.6.12",
       "npm:ai@^4.3.16",
       "npm:multiformats@^13.3.6",
+      "npm:neverthrow@8",
       "npm:react@^19.1.0",
       "npm:redis@^5.1.1",
       "npm:zod@^3.25.32"

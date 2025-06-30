@@ -11,6 +11,7 @@ import { z } from "zod";
 import { env } from "../env.ts";
 import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import { getUrlForOgImage } from "../og.tsx";
+import { ok, err, Result, ResultAsync } from "neverthrow";
 
 type Test =
   | {
@@ -153,46 +154,61 @@ function getAllLienIdToFetch(originalTms: Tm[] | undefined): string[] {
   return allLienIds;
 }
 
-async function fetchAllLiens(
+function fetchAllLiens(
   originalTms: Tm[] | undefined,
-): Promise<Record<string, ConsultJorfResponse>> {
+): ResultAsync<Record<string, ConsultJorfResponse>, string> {
   console.log("getAllLienIdToFetch");
   const allLienIds = getAllLienIdToFetch(originalTms);
   console.log("allLienIds", allLienIds);
-  const allLienDetails: Record<string, ConsultJorfResponse> = {};
 
-  for (const id of allLienIds) {
+  const fetchSequentially = (
+    index: number,
+    allLienDetails: Record<string, ConsultJorfResponse>
+  ): ResultAsync<Record<string, ConsultJorfResponse>, string> => {
+    if (index >= allLienIds.length) {
+      return ResultAsync.fromSafePromise(Promise.resolve(allLienDetails));
+    }
+
+    const id = allLienIds[index];
     console.log("fetching", id);
-    const detail = await getJoDetail(id);
-    if (detail) {
+    
+    return getJoDetail(id).andThen((detail) => {
       allLienDetails[id] = detail;
-    }
+      
+      if (env.WAIT) {
+        console.log("waiting", env.WAIT);
+        return ResultAsync.fromPromise(
+          new Promise((resolve) =>
+            setTimeout(resolve, (Math.random() + 1) * 1000)
+          ),
+          () => "Failed to wait"
+        ).andThen(() => fetchSequentially(index + 1, allLienDetails));
+      }
+      
+      return fetchSequentially(index + 1, allLienDetails);
+    });
+  };
 
-    if (env.WAIT) {
-      console.log("waiting", env.WAIT);
-      // wait between 1000ms and 2000ms
-      await new Promise((resolve) =>
-        setTimeout(resolve, (Math.random() + 1) * 1000)
-      );
-    }
-  }
-
-  return allLienDetails;
+  return fetchSequentially(0, {});
 }
 
-async function renderJoToMarkdown(
+function renderJoToMarkdown(
   joSummaryResponse: GetJosResponse,
   date: string,
-) {
+): ResultAsync<string, string> {
   if (!joSummaryResponse?.items || joSummaryResponse.items.length === 0) {
-    return "No items found in the JO summary. 🚫";
+    return ResultAsync.fromSafePromise(
+      Promise.resolve("No items found in the JO summary. 🚫")
+    );
   }
 
   const journalOfficiel = joSummaryResponse.items[0]?.joCont?.structure.tms
     .find((e) => e.titre === 'Journal officiel "Lois et Décrets"');
 
   if (!journalOfficiel) {
-    return "Journal officiel 'Lois et Décrets' not found. 📰🚫";
+    return ResultAsync.fromSafePromise(
+      Promise.resolve("Journal officiel 'Lois et Décrets' not found. 📰🚫")
+    );
   }
 
   const titleToFilter: Title[] = [
@@ -217,66 +233,66 @@ async function renderJoToMarkdown(
   );
 
   console.log("fetchAllLiens");
-  const allLienDetails = await fetchAllLiens(tmsFiltered);
+  return fetchAllLiens(tmsFiltered).map((allLienDetails) => {
+    console.log("renderJoToMarkdownSub");
+    const selectedElements = renderJoToMarkdownSub(
+      tmsFiltered,
+      date,
+      allLienDetails,
+    );
 
-  console.log("renderJoToMarkdownSub");
-  const selectedElements = renderJoToMarkdownSub(
-    tmsFiltered,
-    date,
-    allLienDetails,
-  );
-
-  return `Table of contents:\n\n${tableOfContents}\n\n\n${selectedElements}`;
+    return `Table of contents:\n\n${tableOfContents}\n\n\n${selectedElements}`;
+  });
 }
 
-export async function getTweetForLastJo() {
+export function getTweetForLastJo(): ResultAsync<{
+  url: string;
+  object: {
+    title: string;
+    tweets: { content: string }[];
+  };
+  date: string;
+  preview: string;
+}, string> {
   console.log("getTweetForLastJo");
-  const lastNJoResponse = await listLastNJo(1);
-  if (!lastNJoResponse) {
-    throw new Error("call to listLastNJo failed");
-  }
-  console.log("lastNJoResponse", lastNJoResponse);
+  return listLastNJo(1).andThen((lastNJoResponse) => {
+    console.log("lastNJoResponse", lastNJoResponse);
 
-  const dateToday = new Date().toISOString().split("T")[0];
-  const firstContainer = lastNJoResponse?.containers[0];
-  const firstContainerDate =
-    new Date(firstContainer.datePubli).toISOString().split("T")[0];
+    const dateToday = new Date().toISOString().split("T")[0];
+    const firstContainer = lastNJoResponse?.containers[0];
+    
+    if (!firstContainer) {
+      return err("No containers found in response");
+    }
+    
+    const firstContainerDate =
+      new Date(firstContainer.datePubli).toISOString().split("T")[0];
 
-  // if (firstContainerDate !== dateToday) {
-  // 	console.log('firstContainerDate', firstContainerDate);
-  // 	console.log('dateToday', dateToday);
-  // 	throw new Error('First container date is not today, neaning that the JO is not published yet or that there is no JO for today');
-  // }
+    const container = firstContainer;
+    console.log("container", container);
 
-  const container = firstContainer;
-  console.log("container", container);
+    console.log("getJoSummary", container.id);
+    return getJoSummary(container.id).andThen((joSummaryResponse) => {
+      console.log("joSummaryResponse", joSummaryResponse);
 
-  console.log("getJoSummary", container.id);
-  const joSummaryResponse = await getJoSummary(container.id);
-  console.log("joSummaryResponse", joSummaryResponse);
-
-  if (!joSummaryResponse) {
-    throw new Error("No JO summary response found");
-  }
-
-  console.log("renderJoToMarkdown");
-  const markdown = await renderJoToMarkdown(
-    joSummaryResponse,
-    new Date(container.datePubli).toLocaleDateString("fr-FR", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    }),
-  );
-  console.log("markdown", markdown.length);
-  console.log(
-    new Date(container.datePubli).toLocaleDateString("fr-FR", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    }),
-  );
-  const systemPrompt = `
+      console.log("renderJoToMarkdown");
+      return renderJoToMarkdown(
+        joSummaryResponse,
+        new Date(container.datePubli).toLocaleDateString("fr-FR", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+      ).andThen((markdown) => {
+        console.log("markdown", markdown.length);
+        console.log(
+          new Date(container.datePubli).toLocaleDateString("fr-FR", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+        );
+        const systemPrompt = `
 Crée des tweets informatifs à partir du Journal officiel ci-dessous. Format de sortie attendu:
 
 1. Un tweet d'introduction résumant les principaux thèmes du JO, terminé par 🧵
@@ -308,12 +324,13 @@ IMPORTANT: Adapte le nombre de tweets à la quantité d'informations pertinentes
 REMEMBER: Format = 1 tweet intro + 3-5 tweets détaillés maximum, classés par importance. Les tweets doivent faire moins de 280 caractères.
 `.trim();
 
-  const resAi = await generateObject({
-    model: wrappedLanguageModel,
-    system: systemPrompt,
-    schema: z.object({
-      title: z.string().describe(
-        `
+        return ResultAsync.fromPromise(
+          generateObject({
+            model: wrappedLanguageModel,
+            system: systemPrompt,
+            schema: z.object({
+              title: z.string().describe(
+                `
 le titre du tweet pour l'image de une, reprend les thèmes principaux du JO, exemples:
 - "Santé & Outre-mer, Transport médical, Agriculture & Mayotte"
 - "Éducation nationale, Transition écologique & Protection sociale"
@@ -321,60 +338,47 @@ le titre du tweet pour l'image de une, reprend les thèmes principaux du JO, exe
 - "Économie, Biodiversité & Sécurité"
 - "Réforme des lycées, Emploi & Collectivités territoriales"
 `.trim(),
-      ),
-      tweets: z.array(
-        z.object({
-          content: z.string().describe("le contenu du tweet"),
-          // title: z.string().describe("juste le thème"),
-        }),
-      ),
-    }),
-    prompt: markdown,
-    providerOptions: {
-      google: {
-        thinkingConfig: {
-          // thinkingBudget: 0,
-          includeThoughts: true,
-        },
-      } satisfies GoogleGenerativeAIProviderOptions,
-    },
+              ),
+              tweets: z.array(
+                z.object({
+                  content: z.string().describe("le contenu du tweet"),
+                }),
+              ),
+            }),
+            prompt: markdown,
+            providerOptions: {
+              google: {
+                thinkingConfig: {
+                  includeThoughts: true,
+                },
+              } satisfies GoogleGenerativeAIProviderOptions,
+            },
+          }),
+          (error) => `Failed to generate tweets: ${error}`
+        ).map((resAi) => {
+          const year = new Date(container.datePubli).getFullYear();
+          const month = new Date(container.datePubli).getMonth() + 1;
+          const day = new Date(container.datePubli).getDate();
+
+          const date = `${day.toString().padStart(2, "0")}/${
+            month.toString().padStart(2, "0")
+          }/${year}`;
+
+          const text = resAi.object.title;
+          const ogImageUrl = getUrlForOgImage(text, date);
+
+          return {
+            url: `https://www.legifrance.gouv.fr/jorf/jo/${year}/${
+              month.toString().padStart(2, "0")
+            }/${day.toString().padStart(2, "0")}/${container.num}`,
+            object: resAi.object,
+            date: `${day.toString().padStart(2, "0")}/${
+              month.toString().padStart(2, "0")
+            }/${year}`,
+            preview: ogImageUrl,
+          };
+        });
+      });
+    });
   });
-
-  // const fullText = (resAi.response.body as any).candidates[0].content.parts.map(
-  //   (e) => e.text,
-  // ).join("\n\b");
-
-  // Deno.writeTextFile(
-  //   "thinking.json",
-  //   JSON.stringify(resAi, null, 2),
-  // );
-
-  // Deno.writeTextFile(
-  //   "thinking.txt",
-  //   fullText,
-  // );
-
-  const year = new Date(container.datePubli).getFullYear();
-  const month = new Date(container.datePubli).getMonth() + 1;
-  const day = new Date(container.datePubli).getDate();
-
-  const date = `${day.toString().padStart(2, "0")}/${
-    month.toString().padStart(2, "0")
-  }/${year}`;
-
-  const text = resAi.object.title;
-  const ogImageUrl = getUrlForOgImage(text, date);
-
-  return {
-    // https://www.legifrance.gouv.fr/jorf/jo/2025/05/25/0122
-    url: `https://www.legifrance.gouv.fr/jorf/jo/${year}/${
-      month.toString().padStart(2, "0")
-    }/${day.toString().padStart(2, "0")}/${container.num}`,
-    object: resAi.object,
-    // format DD/MM/YYYY
-    date: `${day.toString().padStart(2, "0")}/${
-      month.toString().padStart(2, "0")
-    }/${year}`,
-    preview: ogImageUrl,
-  };
 }

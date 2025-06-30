@@ -5,15 +5,14 @@ import type {
   GetJorfContResponse,
   GetJosResponse,
 } from "./types.ts";
+import { ok, err, Result, ResultAsync } from "neverthrow";
 
 const BASE_URL =
   "https://sandbox-api.piste.gouv.fr/dila/legifrance/lf-engine-app";
 
-// --- 1. List the Last N "Journal Officiel" ---
-
 let GLOBAL_BEARER: { token: string; expiresAt: Date } | null = null;
 
-async function getAccessToken() {
+function getAccessToken(): ResultAsync<string, string> {
   console.log("running getAccessToken");
   if (GLOBAL_BEARER && GLOBAL_BEARER.expiresAt > new Date()) {
     console.log(
@@ -21,131 +20,144 @@ async function getAccessToken() {
       "expiring in ",
       GLOBAL_BEARER.expiresAt.getTime() - new Date().getTime(),
     );
-    return GLOBAL_BEARER.token;
+    return ResultAsync.fromSafePromise(Promise.resolve(GLOBAL_BEARER.token));
   }
+  
   console.log("getting new BEARER");
-  const token = await getToken();
-  console.log("BEARER", token);
-  // harcode 30 seconds
-  const HARDCODED_EXPIRES_IN = 30000; // in ms
+  return getToken().map((token) => {
+    console.log("BEARER", token);
+    const HARDCODED_EXPIRES_IN = 30000; // in ms
 
-  GLOBAL_BEARER = {
-    token: token.access_token,
-    expiresAt: new Date(Date.now() + HARDCODED_EXPIRES_IN),
-  };
-  return GLOBAL_BEARER.token;
+    GLOBAL_BEARER = {
+      token: token.access_token,
+      expiresAt: new Date(Date.now() + HARDCODED_EXPIRES_IN),
+    };
+    return GLOBAL_BEARER.token;
+  });
 }
 
-export async function listLastNJo(
+export function listLastNJo(
   n: number = 5,
-): Promise<GetJorfContResponse | null> {
-  const BEARER = await getAccessToken();
-  const endpoint = "/consult/lastNJo";
-  const url = `${BASE_URL}${endpoint}`;
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${BEARER}`,
-  };
-  const payload = { nbElement: n };
+): ResultAsync<GetJorfContResponse, string> {
+  return getAccessToken().andThen((BEARER) => {
+    const endpoint = "/consult/lastNJo";
+    const url = `${BASE_URL}${endpoint}`;
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${BEARER}`,
+    };
+    const payload = { nbElement: n };
 
-  try {
     console.log("fetching last N JOs");
-    const response = await globalThis.fetch(url, {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify(payload),
+    return ResultAsync.fromPromise(
+      globalThis.fetch(url, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(payload),
+      }),
+      (error) => `Error listing last N JOs: ${error}`
+    ).andThen((response) => {
+      console.log("response", response);
+
+      if (!response.ok) {
+        console.error("HTTP error! status: ", response.status);
+        return err(`HTTP error! status: ${response.status}`);
+      }
+
+      return ResultAsync.fromPromise(
+        response.json(),
+        (error) => `Failed to parse response: ${error}`
+      ).map((data) => data as GetJorfContResponse);
     });
-    console.log("response", response);
-
-    if (!response.ok) {
-      console.error("HTTP error! status: ", response.status);
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = (await response.json()) as GetJorfContResponse;
-    return data;
-  } catch (e) {
-    console.error(`Error listing last N JOs: ${e}`);
-    return null;
-  }
+  });
 }
 
-// --- 2. Get Details of a Specific "Journal Officiel" (requires its Chronical ID) using /consult/jorfCont ---
-
-export async function getJoSummary(
+export function getJoSummary(
   textCid: string,
-): Promise<GetJosResponse | null> {
-  const BEARER = await getAccessToken();
-  const endpoint = "/consult/jorfCont";
-  const url = `${BASE_URL}${endpoint}`;
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${BEARER}`,
-  };
-  const payload = {
-    id: textCid,
-    pageNumber: 1,
-    pageSize: 10,
-    highlightActivated: "false",
-  };
+): ResultAsync<GetJosResponse, string> {
+  return getAccessToken().andThen((BEARER) => {
+    const endpoint = "/consult/jorfCont";
+    const url = `${BASE_URL}${endpoint}`;
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${BEARER}`,
+    };
+    const payload = {
+      id: textCid,
+      pageNumber: 1,
+      pageSize: 10,
+      highlightActivated: "false",
+    };
 
-  try {
     console.log("fetching JO details");
-    const response = await fetch(url, {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify(payload),
+    return ResultAsync.fromPromise(
+      fetch(url, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(payload),
+      }),
+      (error) => `Error getting JO details: ${error}`
+    ).andThen((response) => {
+      console.log("response", response);
+
+      if (!response.ok) {
+        console.error("HTTP error! status: ", response.status);
+        return ResultAsync.fromPromise(
+          response.text(),
+          () => "Failed to get error text"
+        ).andThen((text) => {
+          console.error(text);
+          return err(`HTTP error! status: ${response.status}`);
+        });
+      }
+
+      return ResultAsync.fromPromise(
+        response.json(),
+        (error) => `Failed to parse response: ${error}`
+      ).map((data) => {
+        console.log("data", data);
+        return data as GetJosResponse;
+      });
     });
-    console.log("response", response);
-
-    if (!response.ok) {
-      console.error("HTTP error! status: ", response.status);
-      const text = await response.text();
-      console.error(text);
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = (await response.json()) as GetJosResponse;
-    console.log("data", data);
-    return data;
-  } catch (e) {
-    console.error(`Error getting JO details: ${e}`);
-    return null;
-  }
+  });
 }
 
-// -- 3. Get the detail of a specific element of a JO --
-
-export async function getJoDetail(
+export function getJoDetail(
   textCid: string,
-): Promise<ConsultJorfResponse | null> {
-  const BEARER = await getAccessToken();
-  const endpoint = "/consult/jorf";
-  const url = `${BASE_URL}${endpoint}`;
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${BEARER}`,
-  };
-  const payload = {
-    textCid: textCid,
-  };
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify(payload),
+): ResultAsync<ConsultJorfResponse, string> {
+  return getAccessToken().andThen((BEARER) => {
+    const endpoint = "/consult/jorf";
+    const url = `${BASE_URL}${endpoint}`;
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${BEARER}`,
+    };
+    const payload = {
+      textCid: textCid,
+    };
+
+    return ResultAsync.fromPromise(
+      fetch(url, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(payload),
+      }),
+      (error) => `Error getting JO detail: ${error}`
+    ).andThen((response) => {
+      if (!response.ok) {
+        return ResultAsync.fromPromise(
+          response.text(),
+          () => "Failed to get error text"
+        ).andThen((text) => {
+          console.error(text);
+          return err(`HTTP error! status: ${response.status}`);
+        });
+      }
+
+      return ResultAsync.fromPromise(
+        response.json(),
+        (error) => `Failed to parse response: ${error}`
+      ).map((data) => data as ConsultJorfResponse);
     });
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error(text);
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = (await response.json()) as ConsultJorfResponse;
-    return data;
-  } catch (e) {
-    console.error(`Error getting JO detail: ${e}`);
-    return null;
-  }
+  });
 }

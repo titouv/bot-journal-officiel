@@ -11,7 +11,9 @@ import { z } from "zod";
 import { env } from "../env.ts";
 import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import { getUrlForOgImage } from "../og.tsx";
-import { ok, err, Result, ResultAsync } from "neverthrow";
+import { err, ok, Result, ResultAsync } from "neverthrow";
+import type { AppError } from "../errors.ts";
+import { createApiError, createJournalError } from "../errors.ts";
 
 type Test =
   | {
@@ -156,35 +158,35 @@ function getAllLienIdToFetch(originalTms: Tm[] | undefined): string[] {
 
 function fetchAllLiens(
   originalTms: Tm[] | undefined,
-): ResultAsync<Record<string, ConsultJorfResponse>, string> {
+): ResultAsync<Record<string, ConsultJorfResponse>, AppError> {
   console.log("getAllLienIdToFetch");
   const allLienIds = getAllLienIdToFetch(originalTms);
   console.log("allLienIds", allLienIds);
 
   const fetchSequentially = (
     index: number,
-    allLienDetails: Record<string, ConsultJorfResponse>
-  ): ResultAsync<Record<string, ConsultJorfResponse>, string> => {
+    allLienDetails: Record<string, ConsultJorfResponse>,
+  ): ResultAsync<Record<string, ConsultJorfResponse>, AppError> => {
     if (index >= allLienIds.length) {
       return ResultAsync.fromSafePromise(Promise.resolve(allLienDetails));
     }
 
     const id = allLienIds[index];
     console.log("fetching", id);
-    
+
     return getJoDetail(id).andThen((detail) => {
       allLienDetails[id] = detail;
-      
+
       if (env.WAIT) {
         console.log("waiting", env.WAIT);
         return ResultAsync.fromPromise(
           new Promise((resolve) =>
             setTimeout(resolve, (Math.random() + 1) * 1000)
           ),
-          () => "Failed to wait"
+          () => createApiError.fetchFailed("timer", "Failed to wait"),
         ).andThen(() => fetchSequentially(index + 1, allLienDetails));
       }
-      
+
       return fetchSequentially(index + 1, allLienDetails);
     });
   };
@@ -195,10 +197,10 @@ function fetchAllLiens(
 function renderJoToMarkdown(
   joSummaryResponse: GetJosResponse,
   date: string,
-): ResultAsync<string, string> {
+): ResultAsync<string, AppError> {
   if (!joSummaryResponse?.items || joSummaryResponse.items.length === 0) {
     return ResultAsync.fromSafePromise(
-      Promise.resolve("No items found in the JO summary. 🚫")
+      Promise.resolve("No items found in the JO summary. 🚫"),
     );
   }
 
@@ -207,7 +209,7 @@ function renderJoToMarkdown(
 
   if (!journalOfficiel) {
     return ResultAsync.fromSafePromise(
-      Promise.resolve("Journal officiel 'Lois et Décrets' not found. 📰🚫")
+      Promise.resolve("Journal officiel 'Lois et Décrets' not found. 📰🚫"),
     );
   }
 
@@ -253,18 +255,20 @@ export function getTweetForLastJo(): ResultAsync<{
   };
   date: string;
   preview: string;
-}, string> {
+}, AppError> {
   console.log("getTweetForLastJo");
   return listLastNJo(1).andThen((lastNJoResponse) => {
     console.log("lastNJoResponse", lastNJoResponse);
 
     const dateToday = new Date().toISOString().split("T")[0];
     const firstContainer = lastNJoResponse?.containers[0];
-    
+
     if (!firstContainer) {
-      return err("No containers found in response");
+      return err(
+        createJournalError.noContainers("No containers found in response"),
+      );
     }
-    
+
     const firstContainerDate =
       new Date(firstContainer.datePubli).toISOString().split("T")[0];
 
@@ -354,7 +358,11 @@ le titre du tweet pour l'image de une, reprend les thèmes principaux du JO, exe
               } satisfies GoogleGenerativeAIProviderOptions,
             },
           }),
-          (error) => `Failed to generate tweets: ${error}`
+          (error) =>
+            createApiError.fetchFailed(
+              "ai-generation",
+              `Failed to generate tweets: ${error}`,
+            ),
         ).map((resAi) => {
           const year = new Date(container.datePubli).getFullYear();
           const month = new Date(container.datePubli).getMonth() + 1;

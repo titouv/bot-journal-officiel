@@ -7,7 +7,7 @@ import { simpleHandler } from "./simple-og.tsx";
 
 async function fetchHandler(request: Request): Promise<Response> {
   const url = new URL(request.url);
-  
+
   if (url.pathname === "/kv") {
     const value = await redis.keys("*");
     return new Response(JSON.stringify(value), {
@@ -16,7 +16,7 @@ async function fetchHandler(request: Request): Promise<Response> {
       },
     });
   }
-  
+
   if (url.pathname === "/") {
     const result = await getTweetForLastJo();
     if (result.isErr()) {
@@ -34,7 +34,7 @@ async function fetchHandler(request: Request): Promise<Response> {
       },
     });
   }
-  
+
   if (url.pathname === "/preview") {
     const result = await previewOg();
     if (result.isErr()) {
@@ -47,7 +47,7 @@ async function fetchHandler(request: Request): Promise<Response> {
     }
     return result.value;
   }
-  
+
   if (url.pathname === "/cron") {
     const result = await handleCron();
     if (result.isErr()) {
@@ -60,7 +60,7 @@ async function fetchHandler(request: Request): Promise<Response> {
     }
     return result.value;
   }
-  
+
   if (url.pathname === "/delete") {
     const agentResult = await getAgent();
     if (agentResult.isErr()) {
@@ -71,7 +71,7 @@ async function fetchHandler(request: Request): Promise<Response> {
         },
       });
     }
-    
+
     const deleteResult = await deleteAllTweetsFromAccount(agentResult.value);
     if (deleteResult.isErr()) {
       return new Response(JSON.stringify({ error: deleteResult.error }), {
@@ -81,18 +81,18 @@ async function fetchHandler(request: Request): Promise<Response> {
         },
       });
     }
-    
+
     return new Response(JSON.stringify(deleteResult.value), {
       headers: {
         "Content-Type": "application/json",
       },
     });
   }
-  
+
   if (url.pathname === "/og") {
     return onRequestOgImage(request);
   }
-  
+
   return new Response("Hello World!");
 }
 

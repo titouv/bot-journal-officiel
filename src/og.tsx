@@ -7,7 +7,7 @@ export async function loadGoogleFont(font: string, weight: number = 400) {
   const css = await (await fetch(url)).text();
   console.log(css);
   const resource = css.match(
-    /src: url\((.+)\) format\('(opentype|truetype)'\)/
+    /src: url\((.+)\) format\('(opentype|truetype)'\)/,
   );
 
   if (resource) {
@@ -38,7 +38,8 @@ const availableFonts = [
 type FontKey = (typeof availableFonts)[number];
 
 async function downloadFont(key: FontKey) {
-  const url = `https://pub-c11354e7907449afa0f29746a0992ffc.r2.dev/New/Marianne/fontes%20desktop/${key}`;
+  const url =
+    `https://pub-c11354e7907449afa0f29746a0992ffc.r2.dev/New/Marianne/fontes%20desktop/${key}`;
   console.log(url);
   const response = await fetch(url);
   if (response.status == 200) {
@@ -193,6 +194,6 @@ export const onRequestOgImage = async (req: Request) => {
           style: "normal",
         },
       ],
-    }
+    },
   );
 };

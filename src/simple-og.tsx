@@ -18,6 +18,6 @@ export function simpleHandler(req: Request) {
       >
         Hello OG Image!
       </div>
-    ) as any
+    ) as any,
   );
 }

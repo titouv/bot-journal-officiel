@@ -5,14 +5,15 @@ import type {
   GetJorfContResponse,
   GetJosResponse,
 } from "./types.ts";
-import { ok, err, Result, ResultAsync } from "neverthrow";
+import { err, ResultAsync } from "neverthrow";
+import { ApiError, AuthError, createApiError } from "../../errors.ts";
 
 const BASE_URL =
   "https://sandbox-api.piste.gouv.fr/dila/legifrance/lf-engine-app";
 
 let GLOBAL_BEARER: { token: string; expiresAt: Date } | null = null;
 
-function getAccessToken(): ResultAsync<string, string> {
+function getAccessToken(): ResultAsync<string, AuthError> {
   console.log("running getAccessToken");
   if (GLOBAL_BEARER && GLOBAL_BEARER.expiresAt > new Date()) {
     console.log(
@@ -22,7 +23,7 @@ function getAccessToken(): ResultAsync<string, string> {
     );
     return ResultAsync.fromSafePromise(Promise.resolve(GLOBAL_BEARER.token));
   }
-  
+
   console.log("getting new BEARER");
   return getToken().map((token) => {
     console.log("BEARER", token);
@@ -38,9 +39,10 @@ function getAccessToken(): ResultAsync<string, string> {
 
 export function listLastNJo(
   n: number = 5,
-): ResultAsync<GetJorfContResponse, string> {
+): ResultAsync<GetJorfContResponse, AuthError | ApiError> {
+  const endpoint = "/consult/lastNJo";
+
   return getAccessToken().andThen((BEARER) => {
-    const endpoint = "/consult/lastNJo";
     const url = `${BASE_URL}${endpoint}`;
     const headers = {
       "Content-Type": "application/json",
@@ -55,18 +57,24 @@ export function listLastNJo(
         headers: headers,
         body: JSON.stringify(payload),
       }),
-      (error) => `Error listing last N JOs: ${error}`
+      (error) => createApiError.fetchFailed(endpoint, String(error)),
     ).andThen((response) => {
       console.log("response", response);
 
       if (!response.ok) {
         console.error("HTTP error! status: ", response.status);
-        return err(`HTTP error! status: ${response.status}`);
+        return err(
+          createApiError.httpError(
+            endpoint,
+            response.status,
+            response.statusText,
+          ),
+        );
       }
 
       return ResultAsync.fromPromise(
         response.json(),
-        (error) => `Failed to parse response: ${error}`
+        (error) => createApiError.parseError(endpoint, String(error)),
       ).map((data) => data as GetJorfContResponse);
     });
   });
@@ -74,9 +82,10 @@ export function listLastNJo(
 
 export function getJoSummary(
   textCid: string,
-): ResultAsync<GetJosResponse, string> {
+): ResultAsync<GetJosResponse, AuthError | ApiError> {
+  const endpoint = "/consult/jorfCont";
+
   return getAccessToken().andThen((BEARER) => {
-    const endpoint = "/consult/jorfCont";
     const url = `${BASE_URL}${endpoint}`;
     const headers = {
       "Content-Type": "application/json",
@@ -96,7 +105,7 @@ export function getJoSummary(
         headers: headers,
         body: JSON.stringify(payload),
       }),
-      (error) => `Error getting JO details: ${error}`
+      (error) => createApiError.fetchFailed(endpoint, String(error)),
     ).andThen((response) => {
       console.log("response", response);
 
@@ -104,16 +113,22 @@ export function getJoSummary(
         console.error("HTTP error! status: ", response.status);
         return ResultAsync.fromPromise(
           response.text(),
-          () => "Failed to get error text"
+          () => createApiError.parseError(endpoint, "Failed to get error text"),
         ).andThen((text) => {
           console.error(text);
-          return err(`HTTP error! status: ${response.status}`);
+          return err(
+            createApiError.httpError(
+              endpoint,
+              response.status,
+              response.statusText,
+            ),
+          );
         });
       }
 
       return ResultAsync.fromPromise(
         response.json(),
-        (error) => `Failed to parse response: ${error}`
+        (error) => createApiError.parseError(endpoint, String(error)),
       ).map((data) => {
         console.log("data", data);
         return data as GetJosResponse;
@@ -124,9 +139,10 @@ export function getJoSummary(
 
 export function getJoDetail(
   textCid: string,
-): ResultAsync<ConsultJorfResponse, string> {
+): ResultAsync<ConsultJorfResponse, AuthError | ApiError> {
+  const endpoint = "/consult/jorf";
+
   return getAccessToken().andThen((BEARER) => {
-    const endpoint = "/consult/jorf";
     const url = `${BASE_URL}${endpoint}`;
     const headers = {
       "Content-Type": "application/json",
@@ -142,21 +158,27 @@ export function getJoDetail(
         headers: headers,
         body: JSON.stringify(payload),
       }),
-      (error) => `Error getting JO detail: ${error}`
+      (error) => createApiError.fetchFailed(endpoint, String(error)),
     ).andThen((response) => {
       if (!response.ok) {
         return ResultAsync.fromPromise(
           response.text(),
-          () => "Failed to get error text"
+          () => createApiError.parseError(endpoint, "Failed to get error text"),
         ).andThen((text) => {
           console.error(text);
-          return err(`HTTP error! status: ${response.status}`);
+          return err(
+            createApiError.httpError(
+              endpoint,
+              response.status,
+              response.statusText,
+            ),
+          );
         });
       }
 
       return ResultAsync.fromPromise(
         response.json(),
-        (error) => `Failed to parse response: ${error}`
+        (error) => createApiError.parseError(endpoint, String(error)),
       ).map((data) => data as ConsultJorfResponse);
     });
   });

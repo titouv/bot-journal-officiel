@@ -1,4 +1,4 @@
-import { generateObject, generateText } from "ai";
+import { generateObject } from "ai";
 import { getJoDetail, getJoSummary, listLastNJo } from "./scraper/index.ts";
 import type {
   ConsultJorfResponse,
@@ -308,38 +308,62 @@ IMPORTANT: Adapte le nombre de tweets à la quantité d'informations pertinentes
 REMEMBER: Format = 1 tweet intro + 3-5 tweets détaillés maximum, classés par importance.
 IMPORTANT: Les tweets DOIVENT faire moins de 280 caractères.
 `.trim();
-
-  const resAi = await generateObject({
-    model: wrappedLanguageModel,
-    system: systemPrompt,
-    schema: z.object({
-      title: z.string().describe(
-        `
+  const schema = z.object({
+    title: z.string().describe(
+      `
 le titre du tweet pour l'image de une, reprend les thèmes principaux du JO, exemples:
 - "Santé & Outre-mer, Transport médical, Agriculture & Mayotte"
 - "Éducation nationale, Transition écologique & Protection sociale"
-- "Justice, Énergies renouvelables & Formation professionnelle" 
+- "Justice, Énergies renouvelables & Formation professionnelle"
 - "Économie, Biodiversité & Sécurité"
 - "Réforme des lycées, Emploi & Collectivités territoriales"
 `.trim(),
-      ),
-      tweets: z.array(
-        z.object({
-          content: z.string().describe("le contenu du tweet").max(280),
-          // title: z.string().describe("juste le thème"),
-        }),
-      ),
-    }),
-    prompt: markdown,
-    providerOptions: {
-      google: {
-        thinkingConfig: {
-          // thinkingBudget: 0,
-          includeThoughts: true,
-        },
-      } satisfies GoogleGenerativeAIProviderOptions,
-    },
+    ),
+    tweets: z.array(
+      z.object({
+        content: z.string().describe("le contenu du tweet").max(280),
+      }),
+    ),
   });
+
+  async function generateWithPrompt(system: string) {
+    try {
+      const resAi = await generateObject({
+        model: wrappedLanguageModel,
+        system,
+        schema,
+        prompt: markdown,
+        providerOptions: {
+          google: {
+            thinkingConfig: {
+              includeThoughts: true,
+            },
+          } satisfies GoogleGenerativeAIProviderOptions,
+        },
+      });
+      return resAi.object;
+    } catch (error) {
+      const text = (error as any)?.text;
+      if (text) {
+        try {
+          return JSON.parse(text);
+        } catch {
+          throw error;
+        }
+      }
+      throw error;
+    }
+  }
+
+  let resAiObject = await generateWithPrompt(systemPrompt);
+  if (resAiObject.tweets.some((t) => Array.from(t.content).length > 280)) {
+    const retryPrompt =
+      `${systemPrompt}\nRAPPEL: chaque tweet doit faire moins de 280 caractères. Reformule en respectant strictement cette limite.`;
+    resAiObject = await generateWithPrompt(retryPrompt);
+    if (resAiObject.tweets.some((t) => Array.from(t.content).length > 280)) {
+      throw new Error("Generated tweets exceed 280 characters");
+    }
+  }
 
   // const fullText = (resAi.response.body as any).candidates[0].content.parts.map(
   //   (e) => e.text,
@@ -363,7 +387,7 @@ le titre du tweet pour l'image de une, reprend les thèmes principaux du JO, exe
     month.toString().padStart(2, "0")
   }/${year}`;
 
-  const text = resAi.object.title;
+  const text = resAiObject.title;
   const ogImageUrl = getUrlForOgImage(text, date);
 
   return {
@@ -371,7 +395,7 @@ le titre du tweet pour l'image de une, reprend les thèmes principaux du JO, exe
     url: `https://www.legifrance.gouv.fr/jorf/jo/${year}/${
       month.toString().padStart(2, "0")
     }/${day.toString().padStart(2, "0")}/${container.num}`,
-    object: resAi.object,
+    object: resAiObject,
     // format DD/MM/YYYY
     date: `${day.toString().padStart(2, "0")}/${
       month.toString().padStart(2, "0")

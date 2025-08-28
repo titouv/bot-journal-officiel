@@ -325,7 +325,7 @@ le titre du tweet pour l'image de une, reprend les thèmes principaux du JO, exe
       ),
       tweets: z.array(
         z.object({
-          content: z.string().describe("le contenu du tweet").max(280),
+          content: z.string().describe("le contenu du tweet"),
           // title: z.string().describe("juste le thème"),
         }),
       ),

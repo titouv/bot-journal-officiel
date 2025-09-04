@@ -2,6 +2,9 @@ import { AtpAgent, ComAtprotoRepoStrongRef, RichText } from "@atproto/api";
 import { BlobRef } from "@atproto/lexicon";
 
 import { env } from "./env.ts";
+import { generateObject } from "ai";
+import { wrappedLanguageModel } from "./journal/ai.ts";
+import z from "zod";
 
 const envBluesky = {
   identifier: env.BLUESKY_USERNAME!,
@@ -68,6 +71,30 @@ export async function postThread(agent: AtpAgent, tweets: Tweet[]) {
   console.log("Done posting tweets");
 }
 
+async function adaptTextLengthIfNecessary(text: string) {
+  if (text.length > 280) {
+    console.log("Text is too long, adapting it");
+    try {
+      const res = await generateObject({
+        model: wrappedLanguageModel,
+        system:
+          `You will be give a text that is too long to be posted on Twitter. You will need to adapt it to be less than 280 characters.`,
+        prompt: text,
+        schema: z.object({
+          text: z.string().max(280),
+        }),
+      });
+
+      console.log("Adapted text", res.object.text);
+      return res.object.text;
+    } catch (e) {
+      console.error("Error adapting text length", e);
+      return text.slice(0, 280);
+    }
+  }
+  return text;
+}
+
 export async function post(
   agent: AtpAgent,
   tweet: Tweet,
@@ -98,15 +125,17 @@ export async function post(
     blobSave = data.blob;
   }
 
+  const adaptedText = await adaptTextLengthIfNecessary(text);
+
   const rt = new RichText({
-    text: text,
+    text: adaptedText,
   });
   console.log("rt before detectFacets", rt);
   await rt.detectFacets(agent); // automatically detects mentions and links
   console.log("rt after detectFacets", rt);
 
   if (linkDetails && blobSave) {
-    console.log("POSTING WITH LINK DETAILS", text, linkDetails);
+    console.log("POSTING WITH LINK DETAILS", adaptedText, linkDetails);
     const res = await agent.post({
       text: rt.text,
       facets: rt.facets,
@@ -131,7 +160,7 @@ export async function post(
     console.log("res after post", res);
     return res;
   } else {
-    console.log("POSTING WITHOUT LINK DETAILS", text);
+    console.log("POSTING WITHOUT LINK DETAILS", adaptedText);
     const res = await agent.post({
       text: rt.text,
       facets: rt.facets,

@@ -4,7 +4,7 @@ Small Deno service that watches the latest Journal officiel “Lois et Décrets�
 
 Bluesky profile: https://bsky.app/profile/journal-officiel.bsky.social
 
-![Journal officiel](./assets/bsky-profile.png)
+<img src="./assets/bsky-profile.png" alt="Journal officiel" width="300"/>
 
 ## Requirements
 - Deno 1.45+

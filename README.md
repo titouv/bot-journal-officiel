@@ -2,6 +2,10 @@
 
 Small Deno service that watches the latest Journal officiel “Lois et Décrets”, turns it into a short thread, and posts the result to Bluesky with a generated Open Graph card.
 
+Bluesky profile: https://bsky.app/profile/journal-officiel.bsky.social
+
+![Journal officiel](./assets/bsky-profile.png)
+
 ## Requirements
 - Deno 1.45+
 - Access to the French PISTE API, a Bluesky account, Google Generative AI, and Redis

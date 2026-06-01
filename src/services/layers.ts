@@ -1,4 +1,4 @@
-import { Effect, Layer } from "effect"
+import { Layer } from "effect"
 import { AppConfigLive } from "./config.ts"
 import { LoggerLive } from "./logger.ts"
 import { AuthLive } from "./auth.ts"
@@ -19,11 +19,3 @@ export const AppLayer = Layer.mergeAll(
   BlueskyLive,
   AiLive,
 )
-
-const provided = (effect: Effect.Effect<any, any, any>) =>
-  Effect.provide(effect, AppLayer) as Effect.Effect<any, any, never>
-
-export const runApp = <A, E>(
-  effect: Effect.Effect<A, E, any>,
-): Promise<A> =>
-  Effect.runPromise(provided(effect) as Effect.Effect<A, E, never>)

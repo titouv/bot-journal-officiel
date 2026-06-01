@@ -1,111 +1,63 @@
-import { Effect } from "effect"
+import { Effect, Layer } from "effect"
+import {
+  HttpRouter,
+  HttpServerResponse,
+  HttpServerRequest,
+} from "effect/unstable/http"
 import { Redis } from "./services/redis.ts"
-import { AppLayer, runApp } from "./services/layers.ts"
 import { handleCron, previewOg } from "./services/program.ts"
 import { deleteAllPosts } from "./services/delete.ts"
 import { onRequestOgImage } from "./og.tsx"
 
-function fetchHandler(request: Request): Promise<Response> {
-  const url = new URL(request.url)
+const errorHandler = (error: unknown) =>
+  HttpServerResponse.json({ error: String(error) }, { status: 500 as const })
 
-  if (url.pathname === "/kv") {
-    return runApp(
-      Effect.gen(function* () {
-        const redis = yield* Redis
-        const value = yield* redis.keys("*")
-        return new Response(JSON.stringify(value), {
-          headers: { "Content-Type": "application/json" },
-        })
-      }),
-    )
-  }
+const kvHandler = Effect.gen(function* () {
+  const redis = yield* Redis
+  const value = yield* redis.keys("*")
+  const resp = yield* HttpServerResponse.json(value)
+  return resp
+}).pipe(Effect.catch(errorHandler))
 
-  if (url.pathname === "/") {
-    return runApp(
-      previewOg.pipe(
-        Effect.map((value) =>
-          new Response(JSON.stringify(value), {
-            headers: { "Content-Type": "application/json" },
-          })
-        ),
-        Effect.catch((error) =>
-          Effect.succeed(
-            new Response(JSON.stringify({ error: String(error) }), {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            }),
-          )
-        ),
-      ),
-    )
-  }
+const rootHandler = previewOg.pipe(
+  Effect.flatMap((v) => HttpServerResponse.json(v)),
+  Effect.catch(errorHandler),
+)
 
-  if (url.pathname === "/cron") {
-    return runApp(
-      handleCron.pipe(
-        Effect.map((value) =>
-          new Response(JSON.stringify(value), {
-            headers: { "Content-Type": "application/json" },
-          })
-        ),
-        Effect.catch((error) =>
-          Effect.succeed(
-            new Response(JSON.stringify({ error: String(error) }), {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            }),
-          )
-        ),
-      ),
-    )
-  }
+const cronHandler = handleCron.pipe(
+  Effect.flatMap((v) => HttpServerResponse.json(v)),
+  Effect.catch(errorHandler),
+)
 
-  if (url.pathname === "/delete") {
-    return runApp(
-      deleteAllPosts.pipe(
-        Effect.map((value) =>
-          new Response(JSON.stringify(value), {
-            headers: { "Content-Type": "application/json" },
-          })
-        ),
-        Effect.catch((error) =>
-          Effect.succeed(
-            new Response(JSON.stringify({ error: String(error) }), {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            }),
-          )
-        ),
-      ),
-    )
-  }
+const deleteHandler = deleteAllPosts.pipe(
+  Effect.flatMap((v) => HttpServerResponse.json(v)),
+  Effect.catch(errorHandler),
+)
 
-  if (url.pathname === "/og") {
-    return onRequestOgImage(request)
-  }
+const ogHandler = (req: HttpServerRequest.HttpServerRequest) =>
+  Effect.gen(function* () {
+    const webReq = yield* HttpServerRequest.toWeb(req)
+    const webResp = yield* Effect.tryPromise({
+      try: () => onRequestOgImage(webReq),
+      catch: (e) => new Error(String(e)),
+    })
+    return HttpServerResponse.fromWeb(webResp)
+  })
 
-  if (url.pathname === "/preview") {
-    return runApp(
-      previewOg.pipe(
-        Effect.map((value) =>
-          new Response(null, {
-            status: 302,
-            headers: { Location: value.preview },
-          })
-        ),
-        Effect.catch((error) =>
-          Effect.succeed(
-            new Response(JSON.stringify({ error: String(error) }), {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            }),
-          )
-        ),
-      ),
-    )
-  }
+const previewHandler = previewOg.pipe(
+  Effect.map((v) => HttpServerResponse.redirect(v.preview)),
+  Effect.catch(errorHandler),
+)
 
-  return Promise.resolve(new Response("Hello World!"))
-}
+const app = Layer.mergeAll(
+  HttpRouter.add("GET", "/kv", kvHandler),
+  HttpRouter.add("GET", "/", rootHandler),
+  HttpRouter.add("GET", "/cron", cronHandler),
+  HttpRouter.add("GET", "/delete", deleteHandler),
+  HttpRouter.add("GET", "/og", ogHandler),
+  HttpRouter.add("GET", "/preview", previewHandler),
+)
 
-Deno.serve(fetchHandler)
+const { handler: rawHandler } = HttpRouter.toWebHandler(app)
+const handler = (req: Request): Promise<Response> => (rawHandler as (req: Request) => Promise<Response>)(req)
+Deno.serve(handler)

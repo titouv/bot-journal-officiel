@@ -13,6 +13,7 @@
     "npm:effect@4.0.0-beta.74": "4.0.0-beta.74",
     "npm:multiformats@^13.3.6": "13.3.6",
     "npm:react@^19.1.0": "19.1.0",
+    "npm:redis@5.1.1": "5.1.1_@redis+client@5.1.1",
     "npm:redis@^5.1.1": "5.1.1_@redis+client@5.1.1",
     "npm:zod@^3.25.32": "3.25.32"
   },

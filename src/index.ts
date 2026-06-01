@@ -1,51 +1,107 @@
-import { handleCron, previewOg } from "./main.ts";
-import { getTweetForLastJo } from "./journal/index.ts";
-import { deleteAllTweetsFromAccount, getAgent } from "./bluesky.ts";
-import { onRequestOgImage } from "./og.tsx";
-import { redis } from "./redis.ts";
-import { simpleHandler } from "./simple-og.tsx";
+import { Effect } from "effect"
+import { runApp } from "./services/layers.ts"
+import { handleCron, previewOg } from "./services/program.ts"
+import { deleteAllPosts } from "./services/delete.ts"
+import { onRequestOgImage } from "./og.tsx"
+import { redis } from "./redis.ts"
 
-async function fetchHandler(request: Request): Promise<Response> {
-  const url = new URL(request.url);
+function fetchHandler(request: Request): Promise<Response> {
+  const url = new URL(request.url)
+
   if (url.pathname === "/kv") {
-    const value = await redis.keys("*");
-    return new Response(JSON.stringify(value), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    return redis.keys("*").then(
+      (value) => new Response(JSON.stringify(value), {
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
   }
-  if (url.pathname === "/") {
-    const value = await getTweetForLastJo();
 
-    return new Response(JSON.stringify(value), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+  if (url.pathname === "/") {
+    return runApp(
+      previewOg.pipe(
+        Effect.map((value) =>
+          new Response(JSON.stringify(value), {
+            headers: { "Content-Type": "application/json" },
+          })
+        ),
+        Effect.catch((error) =>
+          Effect.succeed(
+            new Response(JSON.stringify({ error: String(error) }), {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            }),
+          )
+        ),
+      ),
+    )
   }
-  if (url.pathname === "/preview") {
-    return await previewOg();
-  }
+
   if (url.pathname === "/cron") {
-    return await handleCron();
+    return runApp(
+      handleCron.pipe(
+        Effect.map((value) =>
+          new Response(JSON.stringify(value), {
+            headers: { "Content-Type": "application/json" },
+          })
+        ),
+        Effect.catch((error) =>
+          Effect.succeed(
+            new Response(JSON.stringify({ error: String(error) }), {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            }),
+          )
+        ),
+      ),
+    )
   }
+
   if (url.pathname === "/delete") {
-    const agent = await getAgent();
-    return new Response(
-      JSON.stringify(await deleteAllTweetsFromAccount(agent)),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-    );
+    return runApp(
+      deleteAllPosts.pipe(
+        Effect.map((value) =>
+          new Response(JSON.stringify(value), {
+            headers: { "Content-Type": "application/json" },
+          })
+        ),
+        Effect.catch((error) =>
+          Effect.succeed(
+            new Response(JSON.stringify({ error: String(error) }), {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            }),
+          )
+        ),
+      ),
+    )
   }
+
   if (url.pathname === "/og") {
-    return onRequestOgImage(request);
+    return onRequestOgImage(request)
   }
-  return new Response("Hello World!");
+
+  if (url.pathname === "/preview") {
+    return runApp(
+      previewOg.pipe(
+        Effect.map((value) =>
+          new Response(null, {
+            status: 302,
+            headers: { Location: value.preview },
+          })
+        ),
+        Effect.catch((error) =>
+          Effect.succeed(
+            new Response(JSON.stringify({ error: String(error) }), {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            }),
+          )
+        ),
+      ),
+    )
+  }
+
+  return Promise.resolve(new Response("Hello World!"))
 }
 
-// Deno.serve(simpleHandler);
-Deno.serve(fetchHandler);
+Deno.serve(fetchHandler)

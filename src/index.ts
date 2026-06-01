@@ -4,6 +4,7 @@ import {
   HttpServerResponse,
   HttpServerRequest,
 } from "effect/unstable/http"
+import { AppLayer } from "./services/layers.ts"
 import { Redis } from "./services/redis.ts"
 import { handleCron, previewOg } from "./services/program.ts"
 import { deleteAllPosts } from "./services/delete.ts"
@@ -49,7 +50,7 @@ const previewHandler = previewOg.pipe(
   Effect.catch(errorHandler),
 )
 
-const app = Layer.mergeAll(
+const RouterLayer = Layer.mergeAll(
   HttpRouter.add("GET", "/kv", kvHandler),
   HttpRouter.add("GET", "/", rootHandler),
   HttpRouter.add("GET", "/cron", cronHandler),
@@ -58,6 +59,6 @@ const app = Layer.mergeAll(
   HttpRouter.add("GET", "/preview", previewHandler),
 )
 
-const { handler: rawHandler } = HttpRouter.toWebHandler(app)
-const handler = (req: Request): Promise<Response> => (rawHandler as (req: Request) => Promise<Response>)(req)
-Deno.serve(handler)
+const AppWithRouter = Layer.provideMerge(RouterLayer, AppLayer)
+const { handler } = HttpRouter.toWebHandler(AppWithRouter as Layer.Layer<any, any, any>)
+Deno.serve(handler as (req: Request) => Promise<Response>)

@@ -1,17 +1,21 @@
 import { Effect } from "effect"
-import { runApp } from "./services/layers.ts"
+import { Redis } from "./services/redis.ts"
+import { AppLayer, runApp } from "./services/layers.ts"
 import { handleCron, previewOg } from "./services/program.ts"
 import { deleteAllPosts } from "./services/delete.ts"
 import { onRequestOgImage } from "./og.tsx"
-import { redis } from "./redis.ts"
 
 function fetchHandler(request: Request): Promise<Response> {
   const url = new URL(request.url)
 
   if (url.pathname === "/kv") {
-    return redis.keys("*").then(
-      (value) => new Response(JSON.stringify(value), {
-        headers: { "Content-Type": "application/json" },
+    return runApp(
+      Effect.gen(function* () {
+        const redis = yield* Redis
+        const value = yield* redis.keys("*")
+        return new Response(JSON.stringify(value), {
+          headers: { "Content-Type": "application/json" },
+        })
       }),
     )
   }

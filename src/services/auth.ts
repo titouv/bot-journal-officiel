@@ -2,9 +2,9 @@ import { Context, Duration, Effect, Layer, Ref, Schedule } from "effect"
 import { AppConfig } from "./config.ts"
 import { AuthError } from "./errors.ts"
 
-export interface OAuthToken {
+export interface CachedToken {
   readonly access_token: string
-  readonly expires_in: number
+  readonly expiresAt: number
 }
 
 export interface Auth {
@@ -14,6 +14,8 @@ export interface Auth {
 export const Auth = Context.Service<Auth>("Auth")
 
 const TOKEN_URL = "https://sandbox-oauth.piste.gouv.fr/api/oauth/token"
+
+const TOKEN_BUFFER_MS = 30_000
 
 const fetchToken = (clientId: string, clientSecret: string) =>
   Effect.tryPromise({
@@ -32,22 +34,24 @@ const fetchToken = (clientId: string, clientSecret: string) =>
           const body = await res.json().catch(() => ({}))
           throw new AuthError(`Token request failed: ${JSON.stringify(body)}`)
         }
-        return res.json() as Promise<OAuthToken>
+        const data = await res.json() as { access_token: string; expires_in: number }
+        return {
+          access_token: data.access_token,
+          expiresAt: Date.now() + data.expires_in * 1000,
+        } satisfies CachedToken
       }),
     catch: (e) =>
       e instanceof AuthError ? e : new AuthError(`Token fetch error: ${e}`),
   })
 
-const isExpired = (token: OAuthToken): boolean => {
-  const buffer = 30_000
-  return (token.expires_in * 1000) - buffer <= 0
-}
+const isExpired = (token: CachedToken): boolean =>
+  Date.now() + TOKEN_BUFFER_MS >= token.expiresAt
 
 export const AuthLive = Layer.effect(
   Auth,
   Effect.gen(function* () {
     const config = yield* AppConfig
-    const tokenRef = yield* Ref.make<OAuthToken | null>(null)
+    const tokenRef = yield* Ref.make<CachedToken | null>(null)
 
     const getToken = Effect.gen(function* () {
       const current = yield* Ref.get(tokenRef)

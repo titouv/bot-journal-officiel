@@ -35,9 +35,7 @@ export class HttpClient extends Context.Service<HttpClient, {
 
           if (!response.ok) {
             const text = yield* readBodySafe(response)
-            return yield* Effect.fail(
-              new ScraperError({ status: response.status, message: `HTTP ${response.status}`, body: text }),
-            )
+            return yield* new ScraperError({ status: response.status, message: `HTTP ${response.status}`, body: text })
           }
 
           const data = yield* Effect.tryPromise({

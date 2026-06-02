@@ -16,30 +16,27 @@ export class Auth extends Context.Service<Auth, {
       const config = yield* AppConfig
       const tokenRef = yield* Ref.make<CachedToken | null>(null)
 
-      const getToken = Effect.fn("Auth.getToken")(
-        function* (): Effect.fn.Return<string, AuthError> {
-          const current = yield* Ref.get(tokenRef)
-          const now = yield* Clock.currentTimeMillis
-          if (current && !isExpired(current, now)) {
-            yield* Effect.log("using cached token")
-            return current.access_token
-          }
-          yield* Effect.log("fetching new token")
-          const retryPolicy = Schedule.recurs(3).pipe(
-            Schedule.addDelay(() => Effect.succeed(Duration.millis(200))),
-          )
-          const fresh = yield* fetchToken(
-            config.pisteClientId,
-            config.pisteClientSecret,
-            now,
-          ).pipe(
-            Effect.retry(retryPolicy),
-          )
-          yield* Ref.set(tokenRef, fresh)
-          return fresh.access_token
-        },
-        Effect.annotateLogs({ service: "auth" }),
-      )
+      const getToken = Effect.gen(function* () {
+        const current = yield* Ref.get(tokenRef)
+        const now = yield* Clock.currentTimeMillis
+        if (current && !isExpired(current, now)) {
+          yield* Effect.log("using cached token")
+          return current.access_token
+        }
+        yield* Effect.log("fetching new token")
+        const retryPolicy = Schedule.recurs(3).pipe(
+          Schedule.addDelay(() => Effect.succeed(Duration.millis(200))),
+        )
+        const fresh = yield* fetchToken(
+          config.pisteClientId,
+          config.pisteClientSecret,
+          now,
+        ).pipe(
+          Effect.retry(retryPolicy),
+        )
+        yield* Ref.set(tokenRef, fresh)
+        return fresh.access_token
+      })
 
       return Auth.of({ getToken })
     }),

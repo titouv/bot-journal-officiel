@@ -40,10 +40,18 @@ export const ConsultJorfResponse = Schema.Struct({
   nature: Schema.String,
 })
 
-export const Tm = Schema.Struct({
+export interface Tm {
+  readonly liensTxt: ReadonlyArray<Schema.Schema.Type<typeof Lien>>
+  readonly ordre: number
+  readonly tms: ReadonlyArray<Tm>
+  readonly titre: string
+  readonly niv: number
+}
+
+export const Tm: Schema.Schema<Tm> = Schema.Struct({
   liensTxt: Schema.Array(Lien),
   ordre: Schema.Number,
-  tms: Schema.Array(Schema.Any),
+  tms: Schema.Array(Schema.suspend((): Schema.Schema<Tm> => Tm)),
   titre: Schema.String,
   niv: Schema.Number,
 })
@@ -71,7 +79,7 @@ export const GetJosResponse = Schema.Struct({
 export type GetJorfContResponse = Schema.Schema.Type<typeof GetJorfContResponse>
 export type GetJosResponse = Schema.Schema.Type<typeof GetJosResponse>
 export type ConsultJorfResponse = Schema.Schema.Type<typeof ConsultJorfResponse>
-export type Tm = Schema.Schema.Type<typeof Tm>
+
 export type Conteneur = Schema.Schema.Type<typeof Conteneur>
 export type Lien = Schema.Schema.Type<typeof Lien>
 export type Structure = Schema.Schema.Type<typeof Structure>

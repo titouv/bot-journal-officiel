@@ -20,8 +20,8 @@ export class Redis extends Context.Service<Redis, {
         socket: { keepAlive: true },
       })
 
-      client.on("error", (err) => Effect.runSync(Effect.logError(`Redis Client Error: ${err}`)))
-      client.on("reconnecting", () => Effect.runSync(Effect.log("Redis is reconnecting...")))
+      client.on("error", (err) => console.error(`Redis Client Error: ${err}`))
+      client.on("reconnecting", () => console.log("Redis is reconnecting..."))
 
       yield* Effect.acquireRelease(
         Effect.tryPromise({

@@ -4,69 +4,74 @@ import type { RedisClientType } from "redis"
 import { AppConfig } from "./config.ts"
 import { RedisError } from "./errors.ts"
 
-export interface Redis {
+export class Redis extends Context.Service<Redis, {
   readonly get: (key: string) => Effect.Effect<string | null, RedisError>
   readonly set: (key: string, value: string) => Effect.Effect<void, RedisError>
   readonly del: (key: string) => Effect.Effect<void, RedisError>
   readonly keys: (pattern: string) => Effect.Effect<string[], RedisError>
-}
+}>("app/Redis") {
+  static readonly Live = Layer.effect(
+    Redis,
+    Effect.gen(function* () {
+      const config = yield* AppConfig
+      const client: RedisClientType = createClient({
+        url: config.redisUrl,
+        pingInterval: 5000,
+        socket: { keepAlive: true },
+      })
 
-export const Redis = Context.Service<Redis>("Redis")
+      client.on("error", (err) => console.error("Redis Client Error", err))
+      client.on("reconnecting", () => console.log("Redis is reconnecting..."))
 
-export const RedisLive = Layer.effect(
-  Redis,
-  Effect.gen(function* () {
-    const config = yield* AppConfig
-    const client: RedisClientType = createClient({
-      url: config.redisUrl,
-      pingInterval: 5000,
-      socket: { keepAlive: true },
-    })
-
-    client.on("error", (err) => console.error("Redis Client Error", err))
-    client.on("reconnecting", () => console.log("Redis is reconnecting..."))
-
-    yield* Effect.acquireRelease(
-      Effect.tryPromise({
-        try: () => client.connect().then(() => undefined as void),
-        catch: (e) => new RedisError({ message: `Failed to connect: ${e}` }),
-      }),
-      () =>
+      yield* Effect.acquireRelease(
         Effect.tryPromise({
-          try: () => client.quit().then(() => undefined as void),
-          catch: () => undefined,
-        }).pipe(Effect.ignore),
-    )
+          try: () => client.connect().then(() => undefined as void),
+          catch: (e) => new RedisError({ message: `Failed to connect: ${e}` }),
+        }),
+        () =>
+          Effect.tryPromise({
+            try: () => client.quit().then(() => undefined as void),
+            catch: () => undefined,
+          }).pipe(Effect.ignore),
+      )
 
-    const safeGet = (key: string) =>
-      Effect.tryPromise({
-        try: () => client.get(key),
-        catch: (e) => new RedisError({ message: `Redis get failed: ${e}` }),
-      })
+      const get = Effect.fn("Redis.get")(
+        function*(key: string): Effect.fn.Return<string | null, RedisError> {
+          return yield* Effect.tryPromise({
+            try: () => client.get(key),
+            catch: (e) => new RedisError({ message: `Redis get failed: ${e}` }),
+          })
+        },
+      )
 
-    const safeSet = (key: string, value: string) =>
-      Effect.tryPromise({
-        try: () => client.set(key, value).then(() => undefined as void),
-        catch: (e) => new RedisError({ message: `Redis set failed: ${e}` }),
-      })
+      const set = Effect.fn("Redis.set")(
+        function*(key: string, value: string): Effect.fn.Return<void, RedisError> {
+          return yield* Effect.tryPromise({
+            try: () => client.set(key, value).then(() => undefined as void),
+            catch: (e) => new RedisError({ message: `Redis set failed: ${e}` }),
+          })
+        },
+      )
 
-    const safeDel = (key: string) =>
-      Effect.tryPromise({
-        try: () => client.del(key).then(() => undefined as void),
-        catch: (e) => new RedisError({ message: `Redis del failed: ${e}` }),
-      })
+      const del = Effect.fn("Redis.del")(
+        function*(key: string): Effect.fn.Return<void, RedisError> {
+          return yield* Effect.tryPromise({
+            try: () => client.del(key).then(() => undefined as void),
+            catch: (e) => new RedisError({ message: `Redis del failed: ${e}` }),
+          })
+        },
+      )
 
-    const safeKeys = (pattern: string) =>
-      Effect.tryPromise({
-        try: () => client.keys(pattern),
-        catch: (e) => new RedisError({ message: `Redis keys failed: ${e}` }),
-      })
+      const keys = Effect.fn("Redis.keys")(
+        function*(pattern: string): Effect.fn.Return<string[], RedisError> {
+          return yield* Effect.tryPromise({
+            try: () => client.keys(pattern),
+            catch: (e) => new RedisError({ message: `Redis keys failed: ${e}` }),
+          })
+        },
+      )
 
-    return {
-      get: safeGet,
-      set: safeSet,
-      del: safeDel,
-      keys: safeKeys,
-    } satisfies Redis
-  }),
-)
+      return Redis.of({ get, set, del, keys })
+    }),
+  )
+}

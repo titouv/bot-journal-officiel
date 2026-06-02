@@ -119,6 +119,7 @@ const fetchAllLiens = Effect.fn("App.fetchAllLiens")(
     }
     return acc
   },
+  Effect.annotateLogs({ component: "cron", method: "fetchAllLiens" }),
 )
 
 const renderJoToMarkdown = Effect.fn("App.renderJoToMarkdown")(
@@ -145,6 +146,7 @@ const renderJoToMarkdown = Effect.fn("App.renderJoToMarkdown")(
     const selectedElements = renderJoToMarkdownSub(tmsFiltered, date, allLienDetails)
     return `Table of contents:\n\n${tableOfContents}\n\n\n${selectedElements}`
   },
+  Effect.annotateLogs({ component: "cron", method: "renderJoToMarkdown" }),
 )
 
 export const handleCron = Effect.fn("App.handleCron")(

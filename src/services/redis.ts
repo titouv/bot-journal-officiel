@@ -42,6 +42,7 @@ export class Redis extends Context.Service<Redis, {
             catch: (e) => new RedisError({ message: `Redis get failed: ${e}` }),
           })
         },
+        Effect.annotateLogs({ service: "redis" }),
       )
 
       const set = Effect.fn("Redis.set")(
@@ -51,6 +52,7 @@ export class Redis extends Context.Service<Redis, {
             catch: (e) => new RedisError({ message: `Redis set failed: ${e}` }),
           })
         },
+        Effect.annotateLogs({ service: "redis" }),
       )
 
       const del = Effect.fn("Redis.del")(
@@ -60,6 +62,7 @@ export class Redis extends Context.Service<Redis, {
             catch: (e) => new RedisError({ message: `Redis del failed: ${e}` }),
           })
         },
+        Effect.annotateLogs({ service: "redis" }),
       )
 
       const keys = Effect.fn("Redis.keys")(
@@ -69,6 +72,7 @@ export class Redis extends Context.Service<Redis, {
             catch: (e) => new RedisError({ message: `Redis keys failed: ${e}` }),
           })
         },
+        Effect.annotateLogs({ service: "redis" }),
       )
 
       return Redis.of({ get, set, del, keys })

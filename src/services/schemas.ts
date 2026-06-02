@@ -1,14 +1,5 @@
 import { Schema } from "effect"
 
-export const TweetContent = Schema.Struct({
-  content: Schema.String,
-})
-
-export const AiResponseSchema = Schema.Struct({
-  title: Schema.String,
-  tweets: Schema.Array(TweetContent),
-})
-
 export const Conteneur = Schema.Struct({
   etat: Schema.String,
   id: Schema.String,
@@ -87,5 +78,3 @@ export type Structure = Schema.Schema.Type<typeof Structure>
 export type JoCont = Schema.Schema.Type<typeof JoCont>
 export type GetJosResponseItem = Schema.Schema.Type<typeof GetJosResponseItem>
 export type ConsultArticle = Schema.Schema.Type<typeof ConsultArticle>
-export type AiResponseSchema = Schema.Schema.Type<typeof AiResponseSchema>
-export type TweetContent = Schema.Schema.Type<typeof TweetContent>

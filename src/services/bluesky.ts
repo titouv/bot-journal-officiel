@@ -127,7 +127,32 @@ export class Bluesky extends Context.Service<Bluesky, {
             )
             if (!parentRef) parentRef = ref
             previousPostRef = ref
-            }
+          }
+        },
+        Effect.annotateLogs({ service: "bluesky", method: "postThread" }),
+      )
+
+      const deleteAllPosts = Effect.fn("Bluesky.deleteAllPosts")(
+        function*(): Effect.fn.Return<void, BlueskyError> {
+          const agent = yield* getAgent()
+          const { data } = yield* Effect.tryPromise({
+            try: () => agent.getProfile({ actor: config.blueskyUsername }),
+            catch: (e) => new BlueskyError({ message: `Get profile failed: ${e}` }),
+          })
+          const { data: feed } = yield* Effect.tryPromise({
+            try: () =>
+              agent.getAuthorFeed({
+                actor: data.did,
+                filter: "posts_and_author_threads",
+                limit: 30,
+              }),
+            catch: (e) => new BlueskyError({ message: `Get feed failed: ${e}` }),
+          })
+          for (const feedPost of feed.feed) {
+            yield* Effect.tryPromise({
+              try: () => agent.deletePost(feedPost.post.uri),
+              catch: (e) => new BlueskyError({ message: `Delete post failed: ${e}` }),
+            })
           }
         },
         Effect.annotateLogs({ service: "bluesky", method: "deleteAllPosts" }),

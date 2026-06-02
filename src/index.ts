@@ -20,17 +20,17 @@ const kvHandler = Effect.gen(function* () {
   return resp
 }).pipe(Effect.catch(errorHandler))
 
-const rootHandler = previewOg.pipe(
+const rootHandler = previewOg().pipe(
   Effect.flatMap((v) => HttpServerResponse.json(v)),
   Effect.catch(errorHandler),
 )
 
-const cronHandler = handleCron.pipe(
+const cronHandler = handleCron().pipe(
   Effect.flatMap((v) => HttpServerResponse.json(v)),
   Effect.catch(errorHandler),
 )
 
-const deleteHandler = deleteAllPosts.pipe(
+const deleteHandler = deleteAllPosts().pipe(
   Effect.flatMap((v) => HttpServerResponse.json(v)),
   Effect.catch(errorHandler),
 )
@@ -45,7 +45,7 @@ const ogHandler = (req: HttpServerRequest.HttpServerRequest) =>
     return HttpServerResponse.fromWeb(webResp)
   }).pipe(Effect.catch(errorHandler))
 
-const previewHandler = previewOg.pipe(
+const previewHandler = previewOg().pipe(
   Effect.map((v) => HttpServerResponse.redirect(v.preview)),
   Effect.catch(errorHandler),
 )

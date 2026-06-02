@@ -152,7 +152,8 @@ const renderJoToMarkdown = Effect.fn("App.renderJoToMarkdown")(
 export const handleCron = Effect.fn("App.handleCron")(
   function* (): Effect.fn.Return<
     { url: string; title: string; tweets: Array<{ content: string }>; date: string },
-    ScraperError | AiError | BlueskyError
+    ScraperError | AiError | BlueskyError,
+    Scraper | Ai | Bluesky | AppConfig
   > {
     const scraper = yield* Scraper
     const ai = yield* Ai
@@ -216,7 +217,8 @@ export const handleCron = Effect.fn("App.handleCron")(
 export const previewOg = Effect.fn("App.previewOg")(
   function* (): Effect.fn.Return<
     { url: string; title: string; preview: string },
-    ScraperError | AiError
+    ScraperError | AiError,
+    Scraper | Ai | AppConfig
   > {
     const scraper = yield* Scraper
 

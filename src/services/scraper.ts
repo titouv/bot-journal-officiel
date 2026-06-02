@@ -39,7 +39,7 @@ export class Scraper extends Context.Service<Scraper, ScraperService>()("app/Scr
           const result = yield* Schema.decodeUnknownEffect(GetJorfContResponse)(raw).pipe(
             Effect.catch(() => Effect.succeed(null)),
           )
-          return (result ?? null) as Schema.Schema.Type<typeof GetJorfContResponse> | null
+          return result ?? null
         },
         Effect.annotateLogs({ service: "scraper" }),
       )
@@ -58,7 +58,7 @@ export class Scraper extends Context.Service<Scraper, ScraperService>()("app/Scr
           const result = yield* Schema.decodeUnknownEffect(GetJosResponse)(raw).pipe(
             Effect.catch(() => Effect.succeed(null)),
           )
-          return (result ?? null) as Schema.Schema.Type<typeof GetJosResponse> | null
+          return result ?? null
         },
         Effect.annotateLogs({ service: "scraper" }),
       )
@@ -72,12 +72,12 @@ export class Scraper extends Context.Service<Scraper, ScraperService>()("app/Scr
           const result = yield* Schema.decodeUnknownEffect(ConsultJorfResponse)(raw).pipe(
             Effect.catch(() => Effect.succeed(null)),
           )
-          return (result ?? null) as Schema.Schema.Type<typeof ConsultJorfResponse> | null
+          return result ?? null
         },
         Effect.annotateLogs({ service: "scraper" }),
       )
 
-      return Scraper.of({ listLastNJo, getJoSummary, getJoDetail })
+      return Scraper.of({ listLastNJo, getJoSummary, getJoDetail } as any)
     }),
   )
 }

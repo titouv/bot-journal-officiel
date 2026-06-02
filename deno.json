@@ -9,7 +9,7 @@
     "zod": "npm:zod@^3.25.32"
   },
   "tasks": {
-    "start": "deno run --allow-net --allow-env --allow-read src/index.ts"
+    "start": "deno run --allow-net --allow-env --allow-read --env-file src/index.ts"
   },
   "nodeModulesDir": "auto"
 }

@@ -59,6 +59,6 @@ const RouterLayer = Layer.mergeAll(
   HttpRouter.add("GET", "/preview", previewHandler),
 )
 
-const AppWithRouter = Layer.provideMerge(RouterLayer, AppLayer)
-const { handler } = HttpRouter.toWebHandler(AppWithRouter as Layer.Layer<any, any, any>)
-Deno.serve(handler as (req: Request) => Promise<Response>)
+const AppWithRouter = RouterLayer.pipe(Layer.provide(AppLayer))
+const { handler } = HttpRouter.toWebHandler(AppWithRouter)
+Deno.serve(handler)

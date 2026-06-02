@@ -30,7 +30,7 @@ export const HttpClientLive = Layer.effect(
     ): Effect.Effect<unknown, ScraperError> =>
       Effect.gen(function* () {
         const token = yield* auth.getToken.pipe(
-          Effect.mapError((e) => new ScraperError(0, e.message)),
+          Effect.mapError((e) => new ScraperError({ status: 0, message: e.message })),
         )
         const response = yield* Effect.tryPromise({
           try: () =>
@@ -43,19 +43,19 @@ export const HttpClientLive = Layer.effect(
               body: JSON.stringify(body),
             }),
           catch: (e) =>
-            new ScraperError(0, `Network error: ${e}`),
+            new ScraperError({ status: 0, message: `Network error: ${e}` }),
         })
 
         if (!response.ok) {
           const text = yield* readBodySafe(response)
           return yield* Effect.fail(
-            new ScraperError(response.status, `HTTP ${response.status}`, text),
+            new ScraperError({ status: response.status, message: `HTTP ${response.status}`, body: text }),
           )
         }
 
         const data = yield* Effect.tryPromise({
           try: () => response.json() as Promise<unknown>,
-          catch: (e) => new ScraperError(response.status, `Parse error: ${e}`),
+          catch: (e) => new ScraperError({ status: response.status, message: `Parse error: ${e}` }),
         })
 
         return data

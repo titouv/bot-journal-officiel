@@ -116,7 +116,7 @@ export const AiLive = Layer.effect(
               } satisfies GoogleGenerativeAIProviderOptions,
             },
           }).then((r) => r.object),
-        catch: (e) => new AiError(`AI generation failed: ${e}`),
+        catch: (e) => new AiError({ message: `AI generation failed: ${e}` }),
       })
 
     return { generateTweets } satisfies Ai

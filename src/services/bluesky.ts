@@ -37,7 +37,7 @@ export const BlueskyLive = Layer.effect(
           })
           return agent
         },
-        catch: (e) => new BlueskyError(`Login failed: ${e}`),
+        catch: (e) => new BlueskyError({ message: `Login failed: ${e}` }),
       })
 
     const uploadImage = (
@@ -49,13 +49,13 @@ export const BlueskyLive = Layer.effect(
           const resImage = await fetch(imageUrl)
           const blob = await resImage.blob()
           const { data, success } = await agent.uploadBlob(blob)
-          if (!success) throw new BlueskyError("Failed to upload blob")
+          if (!success) throw new BlueskyError({ message: "Failed to upload blob" })
           return data.blob
         },
         catch: (e) =>
           e instanceof BlueskyError
             ? e
-            : new BlueskyError(`Image upload failed: ${e}`),
+            : new BlueskyError({ message: `Image upload failed: ${e}` }),
       })
 
     const post = (
@@ -79,7 +79,7 @@ export const BlueskyLive = Layer.effect(
         const rt = new RichText({ text: adaptedText })
         yield* Effect.tryPromise({
           try: () => rt.detectFacets(agent),
-          catch: (e) => new BlueskyError(`Facet detection failed: ${e}`),
+          catch: (e) => new BlueskyError({ message: `Facet detection failed: ${e}` }),
         })
 
         const embed = linkDetails
@@ -109,7 +109,7 @@ export const BlueskyLive = Layer.effect(
                 : undefined,
               embed,
             }),
-          catch: (e) => new BlueskyError(`Post failed: ${e}`),
+          catch: (e) => new BlueskyError({ message: `Post failed: ${e}` }),
         })
 
         return result
@@ -136,7 +136,7 @@ export const BlueskyLive = Layer.effect(
         const agent = yield* getAgent()
         const { data } = yield* Effect.tryPromise({
           try: () => agent.getProfile({ actor: config.blueskyUsername }),
-          catch: (e) => new BlueskyError(`Get profile failed: ${e}`),
+          catch: (e) => new BlueskyError({ message: `Get profile failed: ${e}` }),
         })
         const { data: feed } = yield* Effect.tryPromise({
           try: () =>
@@ -145,12 +145,12 @@ export const BlueskyLive = Layer.effect(
               filter: "posts_and_author_threads",
               limit: 30,
             }),
-          catch: (e) => new BlueskyError(`Get feed failed: ${e}`),
+          catch: (e) => new BlueskyError({ message: `Get feed failed: ${e}` }),
         })
         for (const post of feed.feed) {
           yield* Effect.tryPromise({
             try: () => agent.deletePost(post.post.uri),
-            catch: (e) => new BlueskyError(`Delete post failed: ${e}`),
+            catch: (e) => new BlueskyError({ message: `Delete post failed: ${e}` }),
           })
         }
       })

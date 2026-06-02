@@ -1,31 +1,26 @@
-export class ScraperError {
-  readonly _tag = "ScraperError"
-  constructor(
-    readonly status: number,
-    readonly message: string,
-    readonly body?: string,
-  ) {}
-}
+import { Schema } from "effect"
 
-export class AuthError {
-  readonly _tag = "AuthError"
-  constructor(readonly message: string) {}
-}
+export class ScraperError extends Schema.TaggedErrorClass<ScraperError>()("ScraperError", {
+  status: Schema.Number,
+  message: Schema.String,
+  body: Schema.optionalWith(Schema.String, { exact: true }),
+}) {}
 
-export class RedisError {
-  readonly _tag = "RedisError"
-  constructor(readonly message: string) {}
-}
+export class AuthError extends Schema.TaggedErrorClass<AuthError>()("AuthError", {
+  message: Schema.String,
+}) {}
 
-export class BlueskyError {
-  readonly _tag = "BlueskyError"
-  constructor(readonly message: string) {}
-}
+export class RedisError extends Schema.TaggedErrorClass<RedisError>()("RedisError", {
+  message: Schema.String,
+}) {}
 
-export class AiError {
-  readonly _tag = "AiError"
-  constructor(readonly message: string) {}
-}
+export class BlueskyError extends Schema.TaggedErrorClass<BlueskyError>()("BlueskyError", {
+  message: Schema.String,
+}) {}
+
+export class AiError extends Schema.TaggedErrorClass<AiError>()("AiError", {
+  message: Schema.String,
+}) {}
 
 export type AppError =
   | ScraperError

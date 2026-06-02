@@ -32,7 +32,7 @@ const fetchToken = (clientId: string, clientSecret: string) =>
       }).then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}))
-          throw new AuthError(`Token request failed: ${JSON.stringify(body)}`)
+          throw new AuthError({ message: `Token request failed: ${JSON.stringify(body)}` })
         }
         const data = await res.json() as { access_token: string; expires_in: number }
         return {
@@ -41,7 +41,7 @@ const fetchToken = (clientId: string, clientSecret: string) =>
         } satisfies CachedToken
       }),
     catch: (e) =>
-      e instanceof AuthError ? e : new AuthError(`Token fetch error: ${e}`),
+      e instanceof AuthError ? e : new AuthError({ message: `Token fetch error: ${e}` }),
   })
 
 const isExpired = (token: CachedToken): boolean =>

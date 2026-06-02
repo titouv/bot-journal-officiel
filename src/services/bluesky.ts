@@ -25,8 +25,8 @@ export class Bluesky extends Context.Service<Bluesky, {
       const config = yield* AppConfig
       const agentRef = yield* Ref.make<AtpAgent | null>(null)
 
-      const getAgent = (): Effect.Effect<AtpAgent, BlueskyError> =>
-        Effect.gen(function* () {
+      const getAgent = Effect.fn("Bluesky.getAgent")(
+        function* (): Effect.fn.Return<AtpAgent, BlueskyError> {
           const cached = yield* Ref.get(agentRef)
           if (cached) return cached
           const agent = yield* Effect.tryPromise({
@@ -42,25 +42,28 @@ export class Bluesky extends Context.Service<Bluesky, {
           })
           yield* Ref.set(agentRef, agent)
           return agent
-        })
+        },
+        Effect.annotateLogs({ service: "bluesky" }),
+      )
 
-      const uploadImage = (
-        agent: AtpAgent,
-        imageUrl: string,
-      ): Effect.Effect<BlobRef, BlueskyError> =>
-        Effect.tryPromise({
-          try: async () => {
-            const resImage = await fetch(imageUrl)
-            const blob = await resImage.blob()
-            const { data, success } = await agent.uploadBlob(blob)
-            if (!success) throw new BlueskyError({ message: "Failed to upload blob" })
-            return data.blob
-          },
-          catch: (e) =>
-            e instanceof BlueskyError
-              ? e
-              : new BlueskyError({ message: `Image upload failed: ${e}` }),
-        })
+      const uploadImage = Effect.fn("Bluesky.uploadImage")(
+        function* (agent: AtpAgent, imageUrl: string): Effect.fn.Return<BlobRef, BlueskyError> {
+          return yield* Effect.tryPromise({
+            try: async () => {
+              const resImage = await fetch(imageUrl)
+              const blob = await resImage.blob()
+              const { data, success } = await agent.uploadBlob(blob)
+              if (!success) throw new BlueskyError({ message: "Failed to upload blob" })
+              return data.blob
+            },
+            catch: (e) =>
+              e instanceof BlueskyError
+                ? e
+                : new BlueskyError({ message: `Image upload failed: ${e}` }),
+          })
+        },
+        Effect.annotateLogs({ service: "bluesky", method: "uploadImage" }),
+      )
 
       const post = Effect.fn("Bluesky.post")(
         function*(

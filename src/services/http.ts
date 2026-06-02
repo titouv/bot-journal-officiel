@@ -56,10 +56,16 @@ export class HttpClient extends Context.Service<HttpClient, {
 
 const BASE_URL = "https://sandbox-api.piste.gouv.fr/dila/legifrance/lf-engine-app"
 
-const readBodySafe = (response: Response) =>
-  Effect.tryPromise({ try: () => response.text(), catch: () => "" as never }).pipe(
-    Effect.catch(() => Effect.succeed("<failed to read body>")),
-  )
+const readBodySafe = Effect.fn("HttpClient.readBodySafe")(
+  function*(response: Response): Effect.fn.Return<string> {
+    return yield* Effect.tryPromise({
+      try: () => response.text(),
+      catch: () => "" as never,
+    }).pipe(
+      Effect.catch(() => Effect.succeed("<failed to read body>")),
+    )
+  },
+)
 
 export class CachedHttpClient extends Context.Service<CachedHttpClient, {
   readonly postJSON: (

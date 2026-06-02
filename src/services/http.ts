@@ -47,6 +47,7 @@ export class HttpClient extends Context.Service<HttpClient, {
 
           return data
         },
+        Effect.annotateLogs({ service: "http", method: "postJSON" }),
       )
 
       return HttpClient.of({ postJSON })
@@ -65,6 +66,7 @@ const readBodySafe = Effect.fn("HttpClient.readBodySafe")(
       Effect.catch(() => Effect.succeed("<failed to read body>")),
     )
   },
+  Effect.annotateLogs({ service: "http" }),
 )
 
 export class CachedHttpClient extends Context.Service<CachedHttpClient, {
@@ -94,6 +96,7 @@ export class CachedHttpClient extends Context.Service<CachedHttpClient, {
           yield* redis.set(cacheKey, JSON.stringify(data)).pipe(Effect.ignore)
           return data
         },
+        Effect.annotateLogs({ service: "http", method: "cachedPostJSON" }),
       )
 
       return CachedHttpClient.of({ postJSON })

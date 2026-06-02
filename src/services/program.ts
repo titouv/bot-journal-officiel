@@ -1,6 +1,6 @@
 import { Duration, Effect } from "effect"
 import { Scraper } from "./scraper.ts"
-import type { Tm, ConsultJorfResponse } from "./scraper.ts"
+import type { Tm, ConsultJorfResponse } from "./schemas.ts"
 import { Bluesky } from "./bluesky.ts"
 import type { Tweet } from "./bluesky.ts"
 import { Ai } from "./ai.ts"

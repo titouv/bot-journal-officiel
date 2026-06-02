@@ -1,51 +1,64 @@
-import { handleCron, previewOg } from "./main.ts";
-import { getTweetForLastJo } from "./journal/index.ts";
-import { deleteAllTweetsFromAccount, getAgent } from "./bluesky.ts";
-import { onRequestOgImage } from "./og.tsx";
-import { redis } from "./redis.ts";
-import { simpleHandler } from "./simple-og.tsx";
+import { Effect, Layer } from "effect"
+import {
+  HttpRouter,
+  HttpServerResponse,
+  HttpServerRequest,
+} from "effect/unstable/http"
+import { AppLayer } from "./services/layers.ts"
+import { Redis } from "./services/redis.ts"
+import { handleCron, previewOg } from "./services/program.ts"
+import { deleteAllPosts } from "./services/delete.ts"
+import { onRequestOgImage } from "./og.tsx"
 
-async function fetchHandler(request: Request): Promise<Response> {
-  const url = new URL(request.url);
-  if (url.pathname === "/kv") {
-    const value = await redis.keys("*");
-    return new Response(JSON.stringify(value), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-  }
-  if (url.pathname === "/") {
-    const value = await getTweetForLastJo();
+const errorHandler = (error: unknown) =>
+  HttpServerResponse.json({ error: String(error) }, { status: 500 as const })
 
-    return new Response(JSON.stringify(value), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-  }
-  if (url.pathname === "/preview") {
-    return await previewOg();
-  }
-  if (url.pathname === "/cron") {
-    return await handleCron();
-  }
-  if (url.pathname === "/delete") {
-    const agent = await getAgent();
-    return new Response(
-      JSON.stringify(await deleteAllTweetsFromAccount(agent)),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-    );
-  }
-  if (url.pathname === "/og") {
-    return onRequestOgImage(request);
-  }
-  return new Response("Hello World!");
-}
+const kvHandler = Effect.gen(function* () {
+  const redis = yield* Redis
+  const value = yield* redis.keys("*")
+  const resp = yield* HttpServerResponse.json(value)
+  return resp
+}).pipe(Effect.catch(errorHandler))
 
-// Deno.serve(simpleHandler);
-Deno.serve(fetchHandler);
+const rootHandler = previewOg().pipe(
+  Effect.flatMap((v) => HttpServerResponse.json(v)),
+  Effect.catch(errorHandler),
+)
+
+const cronHandler = handleCron().pipe(
+  Effect.flatMap((v) => HttpServerResponse.json(v)),
+  Effect.catch(errorHandler),
+)
+
+const deleteHandler = deleteAllPosts().pipe(
+  Effect.flatMap((v) => HttpServerResponse.json(v)),
+  Effect.catch(errorHandler),
+)
+
+const ogHandler = (req: HttpServerRequest.HttpServerRequest) =>
+  Effect.gen(function* () {
+    const webReq = yield* HttpServerRequest.toWeb(req)
+    const webResp = yield* Effect.tryPromise({
+      try: () => onRequestOgImage(webReq),
+      catch: (e) => new Error(String(e)),
+    })
+    return HttpServerResponse.fromWeb(webResp)
+  }).pipe(Effect.catch(errorHandler))
+
+const previewHandler = previewOg().pipe(
+  Effect.map((v) => HttpServerResponse.redirect(v.preview)),
+  Effect.catch(errorHandler),
+)
+
+const RouterLayer = Layer.mergeAll(
+  HttpRouter.add("GET", "/kv", kvHandler),
+  HttpRouter.add("GET", "/", rootHandler),
+  HttpRouter.add("GET", "/cron", cronHandler),
+  HttpRouter.add("GET", "/delete", deleteHandler),
+  HttpRouter.add("GET", "/og", ogHandler),
+  HttpRouter.add("GET", "/preview", previewHandler),
+)
+
+const AppWithRouter = RouterLayer.pipe(Layer.provide(AppLayer))
+const { handler } = HttpRouter.toWebHandler(AppWithRouter)
+Deno.serve(handler as (req: Request) => Promise<Response>)

@@ -8,7 +8,7 @@ import {
   ConsultJorfResponse,
 } from "./schemas.ts"
 
-export class Scraper extends Context.Service<Scraper, {
+export interface ScraperService {
   readonly listLastNJo: (n: number) => Effect.Effect<
     Schema.Schema.Type<typeof GetJorfContResponse> | null,
     ScraperError
@@ -21,7 +21,9 @@ export class Scraper extends Context.Service<Scraper, {
     Schema.Schema.Type<typeof ConsultJorfResponse> | null,
     ScraperError
   >
-}>("app/Scraper") {
+}
+
+export class Scraper extends Context.Service<Scraper, ScraperService>()("app/Scraper") {
   static readonly Live = Layer.effect(
     Scraper,
     Effect.gen(function* () {
@@ -33,7 +35,7 @@ export class Scraper extends Context.Service<Scraper, {
           Effect.flatMap((raw) =>
             Schema.decodeUnknownEffect(GetJorfContResponse)(raw)
           ),
-          Effect.catchAll(() => Effect.succeed(null)),
+          Effect.catch(() => Effect.succeed(null)),
         )
 
       const getJoSummary = (textCid: string) =>
@@ -46,7 +48,7 @@ export class Scraper extends Context.Service<Scraper, {
           Effect.flatMap((raw) =>
             Schema.decodeUnknownEffect(GetJosResponse)(raw)
           ),
-          Effect.catchAll(() => Effect.succeed(null)),
+          Effect.catch(() => Effect.succeed(null)),
         )
 
       const getJoDetail = (textCid: string) =>
@@ -54,7 +56,7 @@ export class Scraper extends Context.Service<Scraper, {
           Effect.flatMap((raw) =>
             Schema.decodeUnknownEffect(ConsultJorfResponse)(raw)
           ),
-          Effect.catchAll(() => Effect.succeed(null)),
+          Effect.catch(() => Effect.succeed(null)),
         )
 
       return Scraper.of({ listLastNJo, getJoSummary, getJoDetail })

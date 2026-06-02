@@ -52,7 +52,7 @@ export const ConsultJorfResponse = Schema.Struct({
 export const Tm = Schema.Struct({
   liensTxt: Schema.Array(Lien),
   ordre: Schema.Number,
-  tms: Schema.Array(Schema.suspend(() => Tm)),
+  tms: Schema.Array(Schema.Any),
   titre: Schema.String,
   niv: Schema.Number,
 })

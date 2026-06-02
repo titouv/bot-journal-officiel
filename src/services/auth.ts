@@ -9,7 +9,7 @@ export interface CachedToken {
 
 export class Auth extends Context.Service<Auth, {
   readonly getToken: Effect.Effect<string, AuthError>
-}>("app/Auth") {
+}>()("app/Auth") {
   static readonly Live = Layer.effect(
     Auth,
     Effect.gen(function* () {

@@ -9,7 +9,7 @@ export class Redis extends Context.Service<Redis, {
   readonly set: (key: string, value: string) => Effect.Effect<void, RedisError>
   readonly del: (key: string) => Effect.Effect<void, RedisError>
   readonly keys: (pattern: string) => Effect.Effect<string[], RedisError>
-}>("app/Redis") {
+}>()("app/Redis") {
   static readonly Live = Layer.effect(
     Redis,
     Effect.gen(function* () {

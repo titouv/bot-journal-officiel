@@ -8,7 +8,7 @@ export class HttpClient extends Context.Service<HttpClient, {
     endpoint: string,
     body: unknown,
   ) => Effect.Effect<unknown, ScraperError>
-}>("app/HttpClient") {
+}>()("app/HttpClient") {
   static readonly Live = Layer.effect(
     HttpClient,
     Effect.gen(function* () {
@@ -66,7 +66,7 @@ export class CachedHttpClient extends Context.Service<CachedHttpClient, {
     endpoint: string,
     body: unknown,
   ) => Effect.Effect<unknown, ScraperError>
-}>("app/CachedHttpClient") {
+}>()("app/CachedHttpClient") {
   static readonly Live = Layer.effect(
     CachedHttpClient,
     Effect.gen(function* () {

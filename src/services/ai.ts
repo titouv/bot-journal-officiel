@@ -14,7 +14,7 @@ export class Ai extends Context.Service<Ai, {
   readonly generateTweets: (
     markdown: string,
   ) => Effect.Effect<{ title: string; tweets: Array<{ content: string }> }, AiError>
-}>("app/Ai") {
+}>()("app/Ai") {
   static readonly Live = Layer.effect(
     Ai,
     Effect.gen(function* () {

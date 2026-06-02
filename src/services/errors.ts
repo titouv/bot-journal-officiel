@@ -3,7 +3,7 @@ import { Schema } from "effect"
 export class ScraperError extends Schema.TaggedErrorClass<ScraperError>()("ScraperError", {
   status: Schema.Number,
   message: Schema.String,
-  body: Schema.optionalWith(Schema.String, { exact: true }),
+  body: Schema.optional(Schema.String),
 }) {}
 
 export class AuthError extends Schema.TaggedErrorClass<AuthError>()("AuthError", {

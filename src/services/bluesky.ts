@@ -18,7 +18,7 @@ export class Bluesky extends Context.Service<Bluesky, {
   readonly getAgent: () => Effect.Effect<AtpAgent, BlueskyError>
   readonly postThread: (tweets: Tweet[]) => Effect.Effect<void, BlueskyError>
   readonly deleteAllPosts: () => Effect.Effect<void, BlueskyError>
-}>("app/Bluesky") {
+}>()("app/Bluesky") {
   static readonly Live = Layer.effect(
     Bluesky,
     Effect.gen(function* () {

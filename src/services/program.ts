@@ -1,5 +1,5 @@
 import { Duration, Effect } from "effect"
-import { Scraper } from "./scraper.ts"
+import { Scraper, type ScraperService } from "./scraper.ts"
 import type { Tm, ConsultJorfResponse } from "./schemas.ts"
 import { Bluesky } from "./bluesky.ts"
 import type { Tweet } from "./bluesky.ts"
@@ -36,15 +36,15 @@ function removeHtml(text: string): string {
 }
 
 function renderJoToMarkdownSubForTableOfContents(
-  originalTms: Tm[] | undefined,
+  originalTms: readonly Tm[] | undefined,
   index: number = 0,
 ): string {
   if (!originalTms) return "No content found."
   return originalTms
-    .map((e) => {
+    .map((e: Tm) => {
       const title = `${"  ".repeat(index)}- ${e.titre}`
       const liensTxt = e.liensTxt
-        .map((lien) => `${"  ".repeat(index + 1)}- ${lien.titre}`)
+        .map((lien: Tm["liensTxt"][number]) => `${"  ".repeat(index + 1)}- ${lien.titre}`)
         .join("")
       const tms = renderJoToMarkdownSubForTableOfContents(e.tms, index + 1)
       return `${title}\n${liensTxt ? `${liensTxt}\n` : ""}${tms}`
@@ -53,19 +53,19 @@ function renderJoToMarkdownSubForTableOfContents(
 }
 
 function renderJoToMarkdownSub(
-  originalTms: Tm[] | undefined,
+  originalTms: readonly Tm[] | undefined,
   date: string,
   allLienDetails: Record<string, ConsultJorfResponse>,
   index: number = 0,
 ): string {
   if (!originalTms) return "No content found."
   return originalTms
-    .map((e) => {
+    .map((e: Tm) => {
       const title = `${"#".repeat(index + 1)} ${e.titre}${
         index === 0 ? ` (${date})` : ""
       }`
       const liensTxt = e.liensTxt
-        .map((lien) => {
+        .map((lien: Tm["liensTxt"][number]) => {
           const element = allLienDetails[lien.id]
           return `${"#".repeat(index + 2)} ${lien.titre}, ${lien.ministere}, ${lien.autorite}\n\n${
             element?.articles
@@ -81,7 +81,7 @@ function renderJoToMarkdownSub(
     .join("\n\n")
 }
 
-function getAllLienIdToFetch(originalTms: Tm[] | undefined): string[] {
+function getAllLienIdToFetch(originalTms: readonly Tm[] | undefined): string[] {
   if (!originalTms || originalTms.length === 0) return []
   const tmsForThisLevel = originalTms.flatMap((e) => e.tms)
   const liensForTms = tmsForThisLevel
@@ -95,15 +95,17 @@ function getAllLienIdToFetch(originalTms: Tm[] | undefined): string[] {
 }
 
 function fetchAllLiens(
-  scraper: Scraper,
-  originalTms: Tm[] | undefined,
+  scraper: ScraperService,
+  originalTms: readonly Tm[] | undefined,
   wait: boolean,
 ): Effect.Effect<Record<string, ConsultJorfResponse>> {
   const allLienIds = getAllLienIdToFetch(originalTms)
   return Effect.forEach(allLienIds, (id) =>
     Effect.gen(function* () {
-      const detail = yield* scraper.getJoDetail(id).pipe(
-        Effect.catch(() => Effect.succeed(null)),
+      const detail = yield* (
+        scraper.getJoDetail(id).pipe(
+          Effect.catch(() => Effect.succeed(null)),
+        ) as Effect.Effect<ConsultJorfResponse | null>
       )
       if (wait) yield* Effect.sleep(Duration.millis(1000 + Math.random() * 1000))
       return { id, detail }
@@ -120,8 +122,8 @@ function fetchAllLiens(
 }
 
 function renderJoToMarkdown(
-  scraper: Scraper,
-  joSummaryResponse: { items: Array<{ joCont: { structure: { tms: Tm[] } } }> },
+  scraper: ScraperService,
+  joSummaryResponse: { readonly items: ReadonlyArray<{ readonly joCont: { readonly structure: { readonly tms: ReadonlyArray<Tm> } } }> },
   date: string,
   wait: boolean,
 ): Effect.Effect<string> {

@@ -8,6 +8,5 @@ export const deleteAllPosts = Effect.fn("App.deleteAllPosts")(
     yield* bluesky.deleteAllPosts()
     return { deleted: true }
   },
-  Effect.withSpan("App.deleteAllPosts"),
   Effect.annotateLogs({ component: "delete" }),
 )

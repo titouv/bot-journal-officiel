@@ -210,7 +210,6 @@ export const handleCron = Effect.fn("App.handleCron")(
       date: dateStr,
     }
 },
-  Effect.withSpan("App.handleCron"),
   Effect.annotateLogs({ component: "cron" }),
 )
 
@@ -259,6 +258,5 @@ export const previewOg = Effect.fn("App.previewOg")(
       preview: ogImageUrl,
     }
 },
-  Effect.withSpan("App.previewOg"),
   Effect.annotateLogs({ component: "preview" }),
 )

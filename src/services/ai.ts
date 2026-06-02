@@ -25,13 +25,11 @@ export class Ai extends Context.Service<Ai, {
 
       const model = google("gemini-2.5-flash")
 
-      const generateTweets = (
-        markdown: string,
-      ): Effect.Effect<
-        { title: string; tweets: Array<{ content: string }> },
-        AiError
-      > =>
-        Effect.gen(function* () {
+      const generateTweets = Effect.fn("Ai.generateTweets")(
+        function* (markdown: string): Effect.fn.Return<
+          { title: string; tweets: Array<{ content: string }> },
+          AiError
+        > {
           const params = { system: systemPrompt, prompt: markdown, schema: aiResponseSchema }
           const cacheKey = hash(JSON.stringify(params))
           const cached = yield* redis.get(cacheKey).pipe(
@@ -59,7 +57,9 @@ export class Ai extends Context.Service<Ai, {
 
           yield* redis.set(cacheKey, JSON.stringify(result)).pipe(Effect.ignore)
           return result
-        })
+        },
+        Effect.annotateLogs({ component: "ai" }),
+      )
 
       return Ai.of({ generateTweets })
     }),

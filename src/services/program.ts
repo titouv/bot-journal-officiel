@@ -147,100 +147,114 @@ const renderJoToMarkdown = Effect.fn("App.renderJoToMarkdown")(
   },
 )
 
-export const handleCron = Effect.gen(function* () {
-  const scraper = yield* Scraper
-  const ai = yield* Ai
-  const bluesky = yield* Bluesky
-  const config = yield* AppConfig
+export const handleCron = Effect.fn("App.handleCron")(
+  function* (): Effect.fn.Return<
+    { url: string; title: string; tweets: Array<{ content: string }>; date: string },
+    ScraperError | AiError | BlueskyError
+  > {
+    const scraper = yield* Scraper
+    const ai = yield* Ai
+    const bluesky = yield* Bluesky
+    const config = yield* AppConfig
 
-  const lastNJoResponse = yield* scraper.listLastNJo(1)
+    const lastNJoResponse = yield* scraper.listLastNJo(1)
 
-  if (!lastNJoResponse) {
-    return yield* new ScraperError({ status: 0, message: "call to listLastNJo failed" })
-  }
+    if (!lastNJoResponse) {
+      return yield* new ScraperError({ status: 0, message: "call to listLastNJo failed" })
+    }
 
-  const firstContainer = lastNJoResponse.containers[0]
-  const containerDate = new Date(firstContainer.datePubli)
+    const firstContainer = lastNJoResponse.containers[0]
+    const containerDate = new Date(firstContainer.datePubli)
 
-  const dateFr = containerDate.toLocaleDateString("fr-FR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
+    const dateFr = containerDate.toLocaleDateString("fr-FR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
 
-  const joSummaryResponse = yield* scraper.getJoSummary(firstContainer.id)
-  if (!joSummaryResponse) {
-    return yield* new ScraperError({ status: 0, message: "No JO summary response found" })
-  }
+    const joSummaryResponse = yield* scraper.getJoSummary(firstContainer.id)
+    if (!joSummaryResponse) {
+      return yield* new ScraperError({ status: 0, message: "No JO summary response found" })
+    }
 
-  const markdown = yield* renderJoToMarkdown(scraper, joSummaryResponse, dateFr, config.wait)
+    const markdown = yield* renderJoToMarkdown(scraper, joSummaryResponse, dateFr, config.wait)
 
-  const aiResult = yield* ai.generateTweets(markdown)
+    const aiResult = yield* ai.generateTweets(markdown)
 
-  const year = containerDate.getFullYear()
-  const month = containerDate.getMonth() + 1
-  const day = containerDate.getDate()
-  const dateStr = `${day.toString().padStart(2, "0")}/${month.toString().padStart(2, "0")}/${year}`
-  const url = `https://www.legifrance.gouv.fr/jorf/jo/${year}/${month.toString().padStart(2, "0")}/${day.toString().padStart(2, "0")}/${firstContainer.num}`
+    const year = containerDate.getFullYear()
+    const month = containerDate.getMonth() + 1
+    const day = containerDate.getDate()
+    const dateStr = `${day.toString().padStart(2, "0")}/${month.toString().padStart(2, "0")}/${year}`
+    const url = `https://www.legifrance.gouv.fr/jorf/jo/${year}/${month.toString().padStart(2, "0")}/${day.toString().padStart(2, "0")}/${firstContainer.num}`
 
-  const tweets: Tweet[] = aiResult.tweets.map((tweet, i) => ({
-    text: tweet.content,
-    linkDetails: i === 0
-      ? {
-        title: `JO ${dateStr} - ${aiResult.title}`,
-        link: url,
-        description: tweet.content,
-      }
-      : undefined,
-  }))
+    const tweets: Tweet[] = aiResult.tweets.map((tweet, i) => ({
+      text: tweet.content,
+      linkDetails: i === 0
+        ? {
+          title: `JO ${dateStr} - ${aiResult.title}`,
+          link: url,
+          description: tweet.content,
+        }
+        : undefined,
+    }))
 
-  yield* bluesky.postThread(tweets)
+    yield* bluesky.postThread(tweets)
 
-  return {
-    url,
-    title: aiResult.title,
-    tweets: aiResult.tweets,
-    date: dateStr,
-  }
-})
+    return {
+      url,
+      title: aiResult.title,
+      tweets: aiResult.tweets,
+      date: dateStr,
+    }
+},
+  Effect.withSpan("App.handleCron"),
+  Effect.annotateLogs({ component: "cron" }),
+)
 
-export const previewOg = Effect.gen(function* () {
-  const scraper = yield* Scraper
+export const previewOg = Effect.fn("App.previewOg")(
+  function* (): Effect.fn.Return<
+    { url: string; title: string; preview: string },
+    ScraperError | AiError
+  > {
+    const scraper = yield* Scraper
 
-  const lastNJoResponse = yield* scraper.listLastNJo(1)
-  if (!lastNJoResponse || !lastNJoResponse.containers[0]) {
-    return yield* new ScraperError({ status: 0, message: "No JO found" })
-  }
+    const lastNJoResponse = yield* scraper.listLastNJo(1)
+    if (!lastNJoResponse || !lastNJoResponse.containers[0]) {
+      return yield* new ScraperError({ status: 0, message: "No JO found" })
+    }
 
-  const firstContainer = lastNJoResponse.containers[0]
-  const joSummaryResponse = yield* scraper.getJoSummary(firstContainer.id)
-  if (!joSummaryResponse) {
-    return yield* new ScraperError({ status: 0, message: "No JO summary" })
-  }
+    const firstContainer = lastNJoResponse.containers[0]
+    const joSummaryResponse = yield* scraper.getJoSummary(firstContainer.id)
+    if (!joSummaryResponse) {
+      return yield* new ScraperError({ status: 0, message: "No JO summary" })
+    }
 
-  const containerDate = new Date(firstContainer.datePubli)
-  const dateFr = containerDate.toLocaleDateString("fr-FR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
+    const containerDate = new Date(firstContainer.datePubli)
+    const dateFr = containerDate.toLocaleDateString("fr-FR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
 
-  const markdown = yield* renderJoToMarkdown(scraper, joSummaryResponse, dateFr, false)
+    const markdown = yield* renderJoToMarkdown(scraper, joSummaryResponse, dateFr, false)
 
-  const ai = yield* Ai
-  const aiResult = yield* ai.generateTweets(markdown)
+    const ai = yield* Ai
+    const aiResult = yield* ai.generateTweets(markdown)
 
-  const year = containerDate.getFullYear()
-  const month = containerDate.getMonth() + 1
-  const day = containerDate.getDate()
-  const dateStr = `${day.toString().padStart(2, "0")}/${month.toString().padStart(2, "0")}/${year}`
+    const year = containerDate.getFullYear()
+    const month = containerDate.getMonth() + 1
+    const day = containerDate.getDate()
+    const dateStr = `${day.toString().padStart(2, "0")}/${month.toString().padStart(2, "0")}/${year}`
 
-  const ogImageUrl =
-    `http://localhost:8000/og?text=${encodeURIComponent(aiResult.title)}&date=${encodeURIComponent(dateStr)}`
+    const ogImageUrl =
+      `http://localhost:8000/og?text=${encodeURIComponent(aiResult.title)}&date=${encodeURIComponent(dateStr)}`
 
-  return {
-    url: `https://www.legifrance.gouv.fr/jorf/jo/${year}/${month.toString().padStart(2, "0")}/${day.toString().padStart(2, "0")}/${firstContainer.num}`,
-    title: aiResult.title,
-    preview: ogImageUrl,
-  }
-})
+    return {
+      url: `https://www.legifrance.gouv.fr/jorf/jo/${year}/${month.toString().padStart(2, "0")}/${day.toString().padStart(2, "0")}/${firstContainer.num}`,
+      title: aiResult.title,
+      preview: ogImageUrl,
+    }
+},
+  Effect.withSpan("App.previewOg"),
+  Effect.annotateLogs({ component: "preview" }),
+)

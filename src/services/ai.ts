@@ -33,7 +33,7 @@ export class Ai extends Context.Service<Ai, {
           const params = { system: systemPrompt, prompt: markdown, schema: aiResponseSchema }
           const cacheKey = hash(JSON.stringify(params))
           const cached = yield* redis.get(cacheKey).pipe(
-            Effect.catch(() => Effect.succeed(null)),
+            Effect.catchTag("RedisError", () => Effect.succeed(null)),
           )
           if (cached !== null) {
             return JSON.parse(cached) as { title: string; tweets: Array<{ content: string }> }

@@ -106,7 +106,7 @@ const fetchAllLiens = Effect.fn("App.fetchAllLiens")(
       Effect.gen(function* () {
         const detail = yield* (
           scraper.getJoDetail(id).pipe(
-            Effect.catch(() => Effect.succeed(null)),
+            Effect.catchTag("ScraperError", () => Effect.succeed(null)),
           ) as Effect.Effect<ConsultJorfResponse | null>
         )
         if (wait) yield* Effect.sleep(Duration.millis(1000 + Math.random() * 1000))

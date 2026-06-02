@@ -85,7 +85,7 @@ export class CachedHttpClient extends Context.Service<CachedHttpClient, {
         function*(endpoint: string, body: unknown): Effect.fn.Return<unknown, ScraperError> {
           const cacheKey = JSON.stringify({ endpoint, body })
           const cached = yield* redis.get(cacheKey).pipe(
-            Effect.catch(() => Effect.succeed(null)),
+            Effect.catchTag("RedisError", () => Effect.succeed(null)),
           )
           if (cached !== null) {
             yield* Effect.log(`Cache hit: ${endpoint}`)

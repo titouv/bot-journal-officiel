@@ -1,12 +1,12 @@
 import { Layer } from "effect"
-import { AppConfigLive } from "./config.ts"
-import { LoggerLive } from "./logger.ts"
-import { AuthLive } from "./auth.ts"
-import { RedisLive } from "./redis.ts"
-import { HttpClientLive, CachedHttpClientLive } from "./http.ts"
-import { ScraperLive } from "./scraper.ts"
-import { BlueskyLive } from "./bluesky.ts"
-import { AiLive } from "./ai.ts"
+import { AppConfig } from "./config.ts"
+import { Logger } from "./logger.ts"
+import { Auth } from "./auth.ts"
+import { Redis } from "./redis.ts"
+import { HttpClient, CachedHttpClient } from "./http.ts"
+import { Scraper } from "./scraper.ts"
+import { Bluesky } from "./bluesky.ts"
+import { Ai } from "./ai.ts"
 
 // Dependency chain:
 // AppConfig, Logger (root)
@@ -18,25 +18,25 @@ import { AiLive } from "./ai.ts"
 //
 // Each layer wraps its dependencies via provideMerge, building one layer at a time.
 
-const AuthLayer = AuthLive.pipe(Layer.provide(AppConfigLive))
-const RedisLayer = RedisLive.pipe(Layer.provide(AppConfigLive))
-const HttpClientLayer = HttpClientLive.pipe(Layer.provide(AuthLayer))
-const ScraperLayer = ScraperLive.pipe(
-  Layer.provide(Layer.mergeAll(HttpClientLayer, AppConfigLive)),
+const AuthLayer = Auth.Live.pipe(Layer.provide(AppConfig.Live))
+const RedisLayer = Redis.Live.pipe(Layer.provide(AppConfig.Live))
+const HttpClientLayer = HttpClient.Live.pipe(Layer.provide(AuthLayer))
+const ScraperLayer = Scraper.Live.pipe(
+  Layer.provide(Layer.mergeAll(HttpClientLayer, AppConfig.Live)),
 )
-const CachedHttpClientLayer = CachedHttpClientLive.pipe(
+const CachedHttpClientLayer = CachedHttpClient.Live.pipe(
   Layer.provide(Layer.mergeAll(HttpClientLayer, RedisLayer)),
 )
-const AiLayer = AiLive.pipe(
-  Layer.provide(Layer.mergeAll(RedisLayer, AppConfigLive)),
+const AiLayer = Ai.Live.pipe(
+  Layer.provide(Layer.mergeAll(RedisLayer, AppConfig.Live)),
 )
 
 export const AppLayer = Layer.mergeAll(
-  AppConfigLive,
-  LoggerLive,
+  AppConfig.Live,
+  Logger.Live,
   AuthLayer,
   RedisLayer,
-  BlueskyLive.pipe(Layer.provide(AppConfigLive)),
+  Bluesky.Live.pipe(Layer.provide(AppConfig.Live)),
   HttpClientLayer,
   ScraperLayer,
   CachedHttpClientLayer,

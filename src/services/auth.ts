@@ -7,11 +7,39 @@ export interface CachedToken {
   readonly expiresAt: number
 }
 
-export interface Auth {
+export class Auth extends Context.Service<Auth, {
   readonly getToken: Effect.Effect<string, AuthError>
-}
+}>("app/Auth") {
+  static readonly Live = Layer.effect(
+    Auth,
+    Effect.gen(function* () {
+      const config = yield* AppConfig
+      const tokenRef = yield* Ref.make<CachedToken | null>(null)
 
-export const Auth = Context.Service<Auth>("Auth")
+      const getToken = Effect.gen(function* () {
+        const current = yield* Ref.get(tokenRef)
+        if (current && !isExpired(current)) {
+          yield* Effect.log("using cached token")
+          return current.access_token
+        }
+        yield* Effect.log("fetching new token")
+        const retryPolicy = Schedule.recurs(3).pipe(
+          Schedule.addDelay(() => Effect.succeed(Duration.millis(200))),
+        )
+        const fresh = yield* fetchToken(
+          config.pisteClientId,
+          config.pisteClientSecret,
+        ).pipe(
+          Effect.retry(retryPolicy),
+        )
+        yield* Ref.set(tokenRef, fresh)
+        return fresh.access_token
+      })
+
+      return Auth.of({ getToken })
+    }),
+  )
+}
 
 const TOKEN_URL = "https://sandbox-oauth.piste.gouv.fr/api/oauth/token"
 
@@ -46,30 +74,3 @@ const fetchToken = (clientId: string, clientSecret: string) =>
 
 const isExpired = (token: CachedToken): boolean =>
   Date.now() + TOKEN_BUFFER_MS >= token.expiresAt
-
-export const AuthLive = Layer.effect(
-  Auth,
-  Effect.gen(function* () {
-    const config = yield* AppConfig
-    const tokenRef = yield* Ref.make<CachedToken | null>(null)
-
-    const getToken = Effect.gen(function* () {
-      const current = yield* Ref.get(tokenRef)
-      if (current && !isExpired(current)) {
-        yield* Effect.log("using cached token")
-        return current.access_token
-      }
-      yield* Effect.log("fetching new token")
-      const retryPolicy = Schedule.recurs(3).pipe(
-        Schedule.addDelay(() => Effect.succeed(Duration.millis(200))),
-      )
-      const fresh = yield* fetchToken(config.pisteClientId, config.pisteClientSecret).pipe(
-        Effect.retry(retryPolicy),
-      )
-      yield* Ref.set(tokenRef, fresh)
-      return fresh.access_token
-    })
-
-    return { getToken } satisfies Auth
-  }),
-)

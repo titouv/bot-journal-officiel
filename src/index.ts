@@ -43,7 +43,7 @@ const ogHandler = (req: HttpServerRequest.HttpServerRequest) =>
       catch: (e) => new Error(String(e)),
     })
     return HttpServerResponse.fromWeb(webResp)
-  })
+  }).pipe(Effect.catch(errorHandler))
 
 const previewHandler = previewOg.pipe(
   Effect.map((v) => HttpServerResponse.redirect(v.preview)),

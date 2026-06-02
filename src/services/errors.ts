@@ -22,9 +22,4 @@ export class AiError extends Schema.TaggedErrorClass<AiError>()("AiError", {
   message: Schema.String,
 }) {}
 
-export type AppError =
-  | ScraperError
-  | AuthError
-  | RedisError
-  | BlueskyError
-  | AiError
+

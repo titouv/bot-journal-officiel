@@ -16,7 +16,7 @@ export class HttpClient extends Context.Service<HttpClient, {
 
       const postJSON = Effect.fn("HttpClient.postJSON")(
         function*(endpoint: string, body: unknown): Effect.fn.Return<unknown, ScraperError> {
-          const token = yield* auth.getToken.pipe(
+          const token = yield* auth.getToken().pipe(
             Effect.mapError((e) => new ScraperError({ status: 0, message: e.message })),
           )
           const response = yield* Effect.tryPromise({

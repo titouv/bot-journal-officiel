@@ -2,8 +2,6 @@ import { Context, Effect, Layer } from "effect"
 import { generateObject } from "ai"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google"
-import { wrapLanguageModel } from "ai"
-import type { LanguageModelV1Middleware } from "ai"
 import crypto from "node:crypto"
 import { z } from "zod"
 import { Redis } from "./redis.ts"
@@ -27,48 +25,40 @@ export class Ai extends Context.Service<Ai, {
 
       const model = google("gemini-2.5-flash")
 
-      const cacheMiddleware: LanguageModelV1Middleware = {
-        wrapGenerate: async ({ doGenerate, params }) => {
-          const cacheKey = hash(JSON.stringify(params))
-          const cached = await Effect.runPromise(redis.get(cacheKey)).catch(
-            () => null,
-          )
-          if (cached !== null) {
-            return JSON.parse(cached)
-          }
-          const result = await doGenerate()
-          await Effect.runPromise(
-            redis.set(cacheKey, JSON.stringify(result)).pipe(Effect.ignore),
-          )
-          return result
-        },
-      }
-
-      const cachedModel = wrapLanguageModel({
-        model,
-        middleware: cacheMiddleware,
-      })
-
       const generateTweets = (
         markdown: string,
       ): Effect.Effect<
         { title: string; tweets: Array<{ content: string }> },
         AiError
       > =>
-        Effect.tryPromise({
-          try: () =>
-            generateObject({
-              model: cachedModel,
-              system: systemPrompt,
-              schema: aiResponseSchema,
-              prompt: markdown,
-              providerOptions: {
-                google: {
-                  thinkingConfig: { includeThoughts: true },
-                } satisfies GoogleGenerativeAIProviderOptions,
-              },
-            }).then((r) => r.object),
-          catch: (e) => new AiError({ message: `AI generation failed: ${e}` }),
+        Effect.gen(function* () {
+          const params = { system: systemPrompt, prompt: markdown, schema: aiResponseSchema }
+          const cacheKey = hash(JSON.stringify(params))
+          const cached = yield* redis.get(cacheKey).pipe(
+            Effect.catch(() => Effect.succeed(null)),
+          )
+          if (cached !== null) {
+            return JSON.parse(cached) as { title: string; tweets: Array<{ content: string }> }
+          }
+
+          const result = yield* Effect.tryPromise({
+            try: () =>
+              generateObject({
+                model,
+                system: systemPrompt,
+                schema: aiResponseSchema,
+                prompt: markdown,
+                providerOptions: {
+                  google: {
+                    thinkingConfig: { includeThoughts: true },
+                  } satisfies GoogleGenerativeAIProviderOptions,
+                },
+              }).then((r) => r.object),
+            catch: (e) => new AiError({ message: `AI generation failed: ${e}` }),
+          })
+
+          yield* redis.set(cacheKey, JSON.stringify(result)).pipe(Effect.ignore)
+          return result
         })
 
       return Ai.of({ generateTweets })

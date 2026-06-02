@@ -61,4 +61,4 @@ const RouterLayer = Layer.mergeAll(
 
 const AppWithRouter = RouterLayer.pipe(Layer.provide(AppLayer))
 const { handler } = HttpRouter.toWebHandler(AppWithRouter)
-Deno.serve(handler)
+Deno.serve(handler as (req: Request) => Promise<Response>)

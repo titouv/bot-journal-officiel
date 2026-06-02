@@ -31,7 +31,10 @@ export class Scraper extends Context.Service<Scraper, ScraperService>()("app/Scr
       const config = yield* AppConfig
 
       const listLastNJo = Effect.fn("Scraper.listLastNJo")(
-        function* (n: number) {
+        function* (n: number): Effect.fn.Return<
+          Schema.Schema.Type<typeof GetJorfContResponse> | null,
+          ScraperError
+        > {
           const raw = yield* http.postJSON("/consult/lastNJo", { nbElement: n }).pipe(
             Effect.catch(() => Effect.succeed(null)),
           )
@@ -45,7 +48,10 @@ export class Scraper extends Context.Service<Scraper, ScraperService>()("app/Scr
       )
 
       const getJoSummary = Effect.fn("Scraper.getJoSummary")(
-        function* (textCid: string) {
+        function* (textCid: string): Effect.fn.Return<
+          Schema.Schema.Type<typeof GetJosResponse> | null,
+          ScraperError
+        > {
           const raw = yield* http.postJSON("/consult/jorfCont", {
             id: textCid,
             pageNumber: 1,
@@ -64,7 +70,10 @@ export class Scraper extends Context.Service<Scraper, ScraperService>()("app/Scr
       )
 
       const getJoDetail = Effect.fn("Scraper.getJoDetail")(
-        function* (textCid: string) {
+        function* (textCid: string): Effect.fn.Return<
+          Schema.Schema.Type<typeof ConsultJorfResponse> | null,
+          ScraperError
+        > {
           const raw = yield* http.postJSON("/consult/jorf", { textCid }).pipe(
             Effect.catch(() => Effect.succeed(null)),
           )

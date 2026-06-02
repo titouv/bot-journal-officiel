@@ -103,17 +103,15 @@ const fetchAllLiens = Effect.fn("App.fetchAllLiens")(
   ): Effect.fn.Return<Record<string, ConsultJorfResponse>> {
     const allLienIds = getAllLienIdToFetch(originalTms)
     const results = yield* Effect.forEach(allLienIds, (id) =>
-      Effect.fn("App.fetchAllLiens.forEach")(
-        function* (): Effect.fn.Return<{ readonly id: string; readonly detail: ConsultJorfResponse | null }> {
-          const detail = yield* (
-            scraper.getJoDetail(id).pipe(
-              Effect.catchTag("ScraperError", () => Effect.succeed(null)),
-            ) as Effect.Effect<ConsultJorfResponse | null>
-          )
-          if (wait) yield* Effect.sleep(Duration.millis(1000 + Math.random() * 1000))
-          return { id, detail }
-        },
-      ),
+      Effect.gen(function* () {
+        const detail = yield* (
+          scraper.getJoDetail(id).pipe(
+            Effect.catchTag("ScraperError", () => Effect.succeed(null)),
+          ) as Effect.Effect<ConsultJorfResponse | null>
+        )
+        if (wait) yield* Effect.sleep(Duration.millis(1000 + Math.random() * 1000))
+        return { id, detail }
+      }),
     )
     const acc: Record<string, ConsultJorfResponse> = {}
     for (const { id, detail } of results) {

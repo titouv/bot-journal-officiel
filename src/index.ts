@@ -13,12 +13,14 @@ import { onRequestOgImage } from "./og.tsx"
 const errorHandler = (error: unknown) =>
   HttpServerResponse.json({ error: String(error) }, { status: 500 as const })
 
-const kvHandler = Effect.gen(function* () {
-  const redis = yield* Redis
-  const value = yield* redis.keys("*")
-  const resp = yield* HttpServerResponse.json(value)
-  return resp
-}).pipe(Effect.catch(errorHandler))
+const kvHandler = Effect.fn("App.kvHandler")(
+  function* (): Effect.fn.Return<HttpServerResponse.HttpServerResponse> {
+    const redis = yield* Redis
+    const value = yield* redis.keys("*")
+    return yield* HttpServerResponse.json(value)
+  },
+  Effect.catch(errorHandler),
+)
 
 const rootHandler = previewOg().pipe(
   Effect.flatMap((v) => HttpServerResponse.json(v)),
@@ -36,14 +38,17 @@ const deleteHandler = deleteAllPosts().pipe(
 )
 
 const ogHandler = (req: HttpServerRequest.HttpServerRequest) =>
-  Effect.gen(function* () {
-    const webReq = yield* HttpServerRequest.toWeb(req)
-    const webResp = yield* Effect.tryPromise({
-      try: () => onRequestOgImage(webReq),
-      catch: (e) => new Error(String(e)),
-    })
-    return HttpServerResponse.fromWeb(webResp)
-  }).pipe(Effect.catch(errorHandler))
+  Effect.fn("App.ogHandler")(
+    function* (): Effect.fn.Return<HttpServerResponse.HttpServerResponse> {
+      const webReq = yield* HttpServerRequest.toWeb(req)
+      const webResp = yield* Effect.tryPromise({
+        try: () => onRequestOgImage(webReq),
+        catch: (e) => new Error(String(e)),
+      })
+      return HttpServerResponse.fromWeb(webResp)
+    },
+    Effect.catch(errorHandler),
+  )
 
 const previewHandler = previewOg().pipe(
   Effect.map((v) => HttpServerResponse.redirect(v.preview)),

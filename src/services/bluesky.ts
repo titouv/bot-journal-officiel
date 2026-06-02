@@ -1,4 +1,4 @@
-import { Context, Effect, Layer } from "effect"
+import { Context, Effect, Layer, Ref } from "effect"
 import { AtpAgent, RichText } from "@atproto/api"
 import type { ComAtprotoRepoStrongRef, BlobRef } from "@atproto/api"
 import { AppConfig } from "./config.ts"
@@ -23,18 +23,25 @@ export class Bluesky extends Context.Service<Bluesky, {
     Bluesky,
     Effect.gen(function* () {
       const config = yield* AppConfig
+      const agentRef = yield* Ref.make<AtpAgent | null>(null)
 
-      const getAgent = () =>
-        Effect.tryPromise({
-          try: async () => {
-            const agent = new AtpAgent({ service: "https://bsky.social" })
-            await agent.login({
-              identifier: config.blueskyUsername,
-              password: config.blueskyPassword,
-            })
-            return agent
-          },
-          catch: (e) => new BlueskyError({ message: `Login failed: ${e}` }),
+      const getAgent = (): Effect.Effect<AtpAgent, BlueskyError> =>
+        Effect.gen(function* () {
+          const cached = yield* Ref.get(agentRef)
+          if (cached) return cached
+          const agent = yield* Effect.tryPromise({
+            try: async () => {
+              const a = new AtpAgent({ service: "https://bsky.social" })
+              await a.login({
+                identifier: config.blueskyUsername,
+                password: config.blueskyPassword,
+              })
+              return a
+            },
+            catch: (e) => new BlueskyError({ message: `Login failed: ${e}` }),
+          })
+          yield* Ref.set(agentRef, agent)
+          return agent
         })
 
       const uploadImage = (

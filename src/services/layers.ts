@@ -1,6 +1,5 @@
 import { Layer } from "effect"
 import { AppConfig } from "./config.ts"
-import { Logger } from "./logger.ts"
 import { Auth } from "./auth.ts"
 import { Redis } from "./redis.ts"
 import { HttpClient, CachedHttpClient } from "./http.ts"
@@ -9,7 +8,7 @@ import { Bluesky } from "./bluesky.ts"
 import { Ai } from "./ai.ts"
 
 // Dependency chain:
-// AppConfig, Logger (root)
+// AppConfig (root)
 //   → Auth, Redis, Bluesky (depend on AppConfig)
 //     → HttpClient (depends on Auth)
 //       → Scraper (depends on HttpClient + AppConfig)
@@ -33,7 +32,6 @@ const AiLayer = Ai.Live.pipe(
 
 export const AppLayer = Layer.mergeAll(
   AppConfig.Live,
-  Logger.Live,
   AuthLayer,
   RedisLayer,
   Bluesky.Live.pipe(Layer.provide(AppConfig.Live)),

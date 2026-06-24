@@ -25,4 +25,10 @@ try {
   console.error("Redis connection error", e);
 }
 
-export { redis };
+async function closeRedis() {
+  if (redis) {
+    await redis.quit();
+  }
+}
+
+export { redis, closeRedis };

@@ -26,7 +26,7 @@ export type Tweet = {
     link: string;
     title: string;
     description: string;
-    imageUrl?: string;
+    imageBuffer?: ArrayBuffer;
   };
 };
 
@@ -109,14 +109,9 @@ export async function post(
 
   let blobSave: BlobRef | undefined;
 
-  if (linkDetails && linkDetails.imageUrl) {
-    console.log("UPLOADING IMAGE", linkDetails.imageUrl);
-    const resImage = await fetch(linkDetails.imageUrl);
-    console.log("FETCHING IMAGE RES", resImage.status);
-    console.log("FETCHING IMAGE RES", resImage.statusText);
-    console.log("FETCHING IMAGE RES", resImage.headers);
-    console.log("FETCHING IMAGE RES", resImage.body);
-    const blob = await resImage.blob();
+  if (linkDetails && linkDetails.imageBuffer) {
+    console.log("UPLOADING IMAGE from buffer");
+    const blob = new Blob([linkDetails.imageBuffer], { type: "image/png" });
     const { data, success } = await agent.uploadBlob(blob);
     console.log("UPLOADED IMAGE", data, success);
     if (!success) {

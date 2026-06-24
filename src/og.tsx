@@ -7,7 +7,7 @@ export async function loadGoogleFont(font: string, weight: number = 400) {
   const css = await (await fetch(url)).text();
   console.log(css);
   const resource = css.match(
-    /src: url\((.+)\) format\('(opentype|truetype)'\)/
+    /src: url\((.+)\) format\('(opentype|truetype)'\)/,
   );
 
   if (resource) {
@@ -38,7 +38,8 @@ const availableFonts = [
 type FontKey = (typeof availableFonts)[number];
 
 async function downloadFont(key: FontKey) {
-  const url = `https://pub-c11354e7907449afa0f29746a0992ffc.r2.dev/New/Marianne/fontes%20desktop/${key}`;
+  const url =
+    `https://pub-c11354e7907449afa0f29746a0992ffc.r2.dev/New/Marianne/fontes%20desktop/${key}`;
   console.log(url);
   const response = await fetch(url);
   if (response.status == 200) {
@@ -47,30 +48,12 @@ async function downloadFont(key: FontKey) {
   throw new Error("failed to download font");
 }
 
-export function getUrlForOgImage(text: string, date: string) {
-  const baseUrl = "http://localhost:8000";
-  const url = new URL(`${baseUrl}/og`);
-  url.searchParams.set("text", text);
-  url.searchParams.set("date", date);
-  return url.toString();
-}
+const colors = {
+  french_blue: "#022154",
+  french_red: "#CF0B21",
+};
 
-export const onRequestOgImage = async (req: Request) => {
-  const url = new URL(req.url);
-  let text = url.searchParams.get("text");
-  let date = url.searchParams.get("date");
-
-  if (!text) {
-    text = "Santé & Outre-mer, Transport médical, Agriculture & Mayotte";
-    date = "25/10";
-    // return new Response('No text provided', { status: 400 });
-  }
-
-  const colors = {
-    french_blue: "#022154",
-    french_red: "#CF0B21",
-  };
-
+async function renderOgImage(text: string, date: string) {
   return new ImageResponse(
     (
       <div
@@ -79,9 +62,6 @@ export const onRequestOgImage = async (req: Request) => {
           width: "100%",
           display: "flex",
           alignItems: "center",
-          // padding: '120px',
-          // gap: '120px',
-          // justifyContent: 'center',
           background: "white",
         }}
       >
@@ -107,7 +87,6 @@ export const onRequestOgImage = async (req: Request) => {
                 fontFamily: "MarianneBold",
                 fontSize: 38,
                 color: "gray",
-                // backgroundColor: "yellow",
               }}
             >
               {date}
@@ -120,7 +99,6 @@ export const onRequestOgImage = async (req: Request) => {
                 color: "black",
                 lineHeight: 1,
                 paddingBottom: "40px",
-                // backgroundColor: "red",
               }}
             >
               {text}
@@ -131,7 +109,6 @@ export const onRequestOgImage = async (req: Request) => {
                 fontSize: 34,
                 color: "gray",
                 letterSpacing: "-0.02em",
-                // backgroundColor: "blue",
               }}
             >
               Journal Officiel de la République Française
@@ -177,11 +154,6 @@ export const onRequestOgImage = async (req: Request) => {
       width: 1200,
       height: 630,
       fonts: [
-        // {
-        // 	name: 'Montserrat',
-        // 	data: await loadGoogleFont('Montserrat', 800),
-        // 	style: 'normal',
-        // },
         {
           name: "MarianneBold",
           data: await downloadFont("Marianne-Bold.otf"),
@@ -193,6 +165,23 @@ export const onRequestOgImage = async (req: Request) => {
           style: "normal",
         },
       ],
-    }
+    },
   );
+}
+
+export async function generateOgImageBuffer(
+  text: string,
+  date: string,
+): Promise<ArrayBuffer> {
+  const response = await renderOgImage(text, date);
+  return await response.arrayBuffer();
+}
+
+export const onRequestOgImage = async (req: Request) => {
+  const url = new URL(req.url);
+  const text = url.searchParams.get("text") ||
+    "Santé & Outre-mer, Transport médical, Agriculture & Mayotte";
+  const date = url.searchParams.get("date") || "25/10";
+
+  return renderOgImage(text, date);
 };

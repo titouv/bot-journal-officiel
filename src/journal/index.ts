@@ -10,7 +10,6 @@ import { wrappedLanguageModel } from "./ai.ts";
 import { z } from "zod";
 import { env } from "../env.ts";
 import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
-import { getUrlForOgImage } from "../og.tsx";
 
 type Test =
   | {
@@ -364,7 +363,6 @@ le titre du tweet pour l'image de une, reprend les thèmes principaux du JO, exe
   }/${year}`;
 
   const text = resAi.object.title;
-  const ogImageUrl = getUrlForOgImage(text, date);
 
   return {
     // https://www.legifrance.gouv.fr/jorf/jo/2025/05/25/0122
@@ -376,6 +374,5 @@ le titre du tweet pour l'image de une, reprend les thèmes principaux du JO, exe
     date: `${day.toString().padStart(2, "0")}/${
       month.toString().padStart(2, "0")
     }/${year}`,
-    preview: ogImageUrl,
   };
 }

@@ -47,14 +47,6 @@ async function downloadFont(key: FontKey) {
   throw new Error("failed to download font");
 }
 
-export function getUrlForOgImage(text: string, date: string) {
-  const baseUrl = "http://localhost:8000";
-  const url = new URL(`${baseUrl}/og`);
-  url.searchParams.set("text", text);
-  url.searchParams.set("date", date);
-  return url.toString();
-}
-
 const colors = {
   french_blue: "#022154",
   french_red: "#CF0B21",

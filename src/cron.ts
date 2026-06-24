@@ -1,3 +1,8 @@
 import { handleCron } from "./main.ts";
 
-await handleCron();
+try {
+  await handleCron();
+} catch (error) {
+  console.error("Cron job failed:", error);
+  Deno.exit(1);
+}

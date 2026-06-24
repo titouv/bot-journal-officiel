@@ -13,7 +13,8 @@
     "zod": "npm:zod@^3.25.32"
   },
   "tasks": {
-    "start": "deno run --allow-net src/index.ts"
+    "cron": "deno run -A src/cron.ts",
+    "start": "deno run -A src/index.ts"
   },
   "nodeModulesDir": "auto",
   "compilerOptions": {

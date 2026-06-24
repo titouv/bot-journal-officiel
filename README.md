@@ -24,14 +24,23 @@ Create a `.env` file (or set environment vars another way) with:
 - `REDIS_URL`
 - `WAIT` (optional, default `true`; adds a small delay between PISTE requests)
 
-## Run Locally
+## Run Locally (cron)
+```sh
+deno task cron
+```
+
+Or start the dev web server (for debugging):
 ```sh
 deno task start
 ```
+Then hit `http://localhost:8000/cron` to trigger the job.
 
-The server exposes a few helper routes:
-- `/` returns the cached data for the most recent issue
-- `/preview` redirects to the generated OG image
-- `/cron` fetches the latest issue and pushes the Bluesky thread
-- `/og` renders the OG card directly
-- `/delete` removes previously posted Bluesky threads (debug)
+## Deploy on Coolify
+
+1. Deploy the repo as an **Application** (Dockerfile-based) — no port mapping needed.
+2. Go to the **Scheduled Tasks** tab and add:
+   - **Command**: `deno run -A src/cron.ts`
+   - **Frequency**: `@daily` (or `0 6 * * *`)
+   - **Container**: auto
+
+The container stays alive with `sleep infinity`; Coolify runs the cron command inside it on schedule.

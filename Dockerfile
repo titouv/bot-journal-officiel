@@ -1,13 +1,9 @@
 FROM denoland/deno:latest
 
-# Create working directory
 WORKDIR /app
 
-# Copy source
 COPY . .
 
-# Compile the main app
-RUN deno cache src/index.ts
+RUN deno cache src/cron.ts
 
-# Run the app
-CMD ["deno", "run", "-A", "src/index.ts"]
+CMD ["sleep", "infinity"]

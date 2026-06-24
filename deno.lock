@@ -2,6 +2,7 @@
   "version": "5",
   "specifiers": {
     "jsr:@hono/hono@^4.7.10": "4.7.10",
+    "jsr:@std/dotenv@*": "0.225.7",
     "npm:@ai-sdk/google@^1.2.18": "1.2.18_zod@3.25.32",
     "npm:@atproto/api@~0.15.10": "0.15.10",
     "npm:@atproto/lexicon@~0.4.11": "0.4.11",
@@ -17,6 +18,9 @@
   "jsr": {
     "@hono/hono@4.7.10": {
       "integrity": "e59029e252af371abe43e8e4f9a115e38974c6bd5972022372bf89f763269cc7"
+    },
+    "@std/dotenv@0.225.7": {
+      "integrity": "11d8db03ca4ad5aba9eba809f2e8058b2a4f320b7b09fea4b360e162928329e3"
     }
   },
   "npm": {
@@ -381,6 +385,43 @@
     "zod@3.25.32": {
       "integrity": "sha512-OSm2xTIRfW8CV5/QKgngwmQW/8aPfGdaQFlrGoErlgg/Epm7cjb6K6VEyExfe65a3VybUOnu381edLb0dfJl0g=="
     }
+  },
+  "redirects": {
+    "https://esm.sh/@types/react@~18.2.79/index.d.ts": "https://esm.sh/@types/react@18.2.79/index.d.ts",
+    "https://esm.sh/@types/react@~19.0.8/index.d.ts": "https://esm.sh/@types/react@19.0.14/index.d.ts",
+    "https://esm.sh/camelize@^1.0.0?target=denonext": "https://esm.sh/camelize@1.0.1?target=denonext",
+    "https://esm.sh/css-background-parser@^0.1.0?target=denonext": "https://esm.sh/css-background-parser@0.1.0?target=denonext",
+    "https://esm.sh/css-color-keywords@^1.0.0?target=denonext": "https://esm.sh/css-color-keywords@1.0.0?target=denonext",
+    "https://esm.sh/css-to-react-native@^3.0.0?target=denonext": "https://esm.sh/css-to-react-native@3.2.0?target=denonext",
+    "https://esm.sh/postcss-value-parser@^4.0.2?target=denonext": "https://esm.sh/postcss-value-parser@4.2.0?target=denonext",
+    "https://esm.sh/postcss-value-parser@^4.2.0?target=denonext": "https://esm.sh/postcss-value-parser@4.2.0?target=denonext",
+    "https://esm.sh/preact": "https://esm.sh/preact@10.29.2"
+  },
+  "remote": {
+    "https://deno.land/x/og_edge@0.0.4/emoji.ts": "f14b3b9fbf52fdc389ee474a67f8e112ff6b17c70a7ee4dd5b242c4243abca98",
+    "https://deno.land/x/og_edge@0.0.4/mod.ts": "987426bda16fb886bbc708eb064318f6648e34aaca46798a55b79732325693b9",
+    "https://esm.sh/@resvg/resvg-wasm@2.0.0-alpha.4": "d371b4611f91d15ce11dcac327c51cd82afeb22ab1d8fbf4a288233d2a099536",
+    "https://esm.sh/@resvg/resvg-wasm@2.0.0-alpha.4/denonext/resvg-wasm.mjs": "684ad3e3052a6de80ebebb052785e670300a29ee92de10ef52e596b3366ea032",
+    "https://esm.sh/@shuding/opentype.js@1.4.0-beta.0/denonext/opentype.mjs": "0cca60bf1cda5c6e059b03a623c2250a968b94dc04df9daabb2748a90d140cba",
+    "https://esm.sh/camelize@1.0.1/denonext/camelize.mjs": "c452bfdf56eff2485fc036727bf1513ccd998b5bf7b8017528f4c6001804e4a5",
+    "https://esm.sh/camelize@1.0.1?target=denonext": "e16d00a4fb85e08deaee10963089b5817fb7171023039f0fe7b0239124fc0eb2",
+    "https://esm.sh/css-background-parser@0.1.0/denonext/css-background-parser.mjs": "3781ddec25c0bd9f1243e76eec40fed5a5bbd7cd3fa14e273118139b30755155",
+    "https://esm.sh/css-background-parser@0.1.0?target=denonext": "51a9834cd6ece8955d562351954d05e5927af96f1ff1a8323b937a3be01c4c0c",
+    "https://esm.sh/css-box-shadow@1.0.0-3/denonext/css-box-shadow.mjs": "2cc6d39ea4de5d510796d35157bce82471702718450823b5bca8b9b31f0763ee",
+    "https://esm.sh/css-color-keywords@1.0.0/denonext/css-color-keywords.mjs": "d795d2fc4a7d7fe912a5af38452784fae2acd8de914312dec5bf57e5d4efb499",
+    "https://esm.sh/css-color-keywords@1.0.0?target=denonext": "fd7991fb5cf8004537c98242891251be3de36ee18c8a50191fec4d7e287ec5cc",
+    "https://esm.sh/css-to-react-native@3.2.0/denonext/css-to-react-native.mjs": "14569a049a27ac1ce66380c82ad340b7f73ae329e007d342ab5221e6c41e4a30",
+    "https://esm.sh/css-to-react-native@3.2.0?target=denonext": "8a1e9a0a89f453e1be791e1f660af19bfc7e2ef44f3d843a021c9e4d61355fb8",
+    "https://esm.sh/postcss-value-parser@4.2.0/denonext/postcss-value-parser.mjs": "2734c0eb4eb5e6a9905fb179ed2f329a346ac076735dbf0bc889276cbfe952bc",
+    "https://esm.sh/postcss-value-parser@4.2.0?target=denonext": "f11ba11f7fe1a5768433011193e133bf80a697154aab65f582bf653305a571d1",
+    "https://esm.sh/preact@10.29.2": "32cedce74f0cff01678e164263a53865805282aafb88b9a7ded577c2ef370e10",
+    "https://esm.sh/preact@10.29.2/denonext/preact.mjs": "85b095fe629a3c2d206e00a3a86ddc16f564c2df777bb9585707b3bd7d8e7f6e",
+    "https://esm.sh/react@18.2.0": "fed8aeb7d240bb42a2167c9c7c6e842e128c7630cbcb08c4d61c9c1926f89c75",
+    "https://esm.sh/satori@0.0.40": "b5c395e91292bad4b41152ebf9c669d038ae49c8829aeee3ec6daafc5a939656",
+    "https://esm.sh/satori@0.0.40/denonext/wasm.mjs": "668eae95e51160f86779ffccfbb8cd57e661956ceafde0d55cfbe356c7e1f6c3",
+    "https://esm.sh/satori@0.0.40/wasm": "76dbd0d73d396e1fbc3cb7c2b3dfdc67db97a9d633d2dafd0b175b63dd117b08",
+    "https://esm.sh/yoga-wasm-web@0.1.2": "211ce9e3af12ab2d77133510c772b5a34945b5f9ca1dc6031c6218828ca48735",
+    "https://esm.sh/yoga-wasm-web@0.1.2/denonext/yoga-wasm-web.mjs": "4efeecefebf2b91375b4fc7a4c3161f0c5686dffb0697b4e7d29857110672fd8"
   },
   "workspace": {
     "dependencies": [
